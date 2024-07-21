@@ -3,12 +3,16 @@ package com.project.doongdoong.domain.analysis.repository;
 import com.project.doongdoong.domain.IntegrationSupportTest;
 import com.project.doongdoong.domain.analysis.dto.response.FeelingStateResponseDto;
 import com.project.doongdoong.domain.analysis.model.Analysis;
+import com.project.doongdoong.domain.answer.model.Answer;
+import com.project.doongdoong.domain.answer.repository.AnswerRepository;
 import com.project.doongdoong.domain.question.model.Question;
 import com.project.doongdoong.domain.question.model.QuestionContent;
 import com.project.doongdoong.domain.question.repository.QuestionRepository;
 import com.project.doongdoong.domain.user.model.SocialType;
 import com.project.doongdoong.domain.user.model.User;
 import com.project.doongdoong.domain.user.repository.UserRepository;
+import com.project.doongdoong.domain.voice.model.Voice;
+import com.project.doongdoong.domain.voice.repository.VoiceRepository;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -27,6 +31,8 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
     @Autowired AnalysisRepository analysisRepository;
     @Autowired QuestionRepository questionRepository;
     @Autowired UserRepository userRepository;
+    @Autowired AnswerRepository answerRepository;
+    @Autowired VoiceRepository voiceRepository;
 
     @Test
     @DisplayName("접근 회원과 고유 분석 번호를 통해 일치하는 분석 정보를 조회합니다.")
@@ -151,6 +157,71 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
                 .hasSize(questions.size())
                 .containsExactlyInAnyOrder(question1, question2, question3, question4);
         ;
+    }
+
+    @Test
+    @DisplayName("음성 답변과 답변 정보가 담긴 분석 정보를 조회한다.")
+    void searchAnalysisWithVoiceOfAnswer(){
+        //given
+        String socialId = "socialId";
+        SocialType socialType = SocialType.APPLE;
+        User user = createUser(socialId, socialType);
+
+        Analysis analysis = createAnalysis(user);
+        userRepository.save(user);
+
+        Voice voice1 = createVoice("파일이름1", QuestionContent.FIXED_QUESTION1);
+        Voice voice2 = createVoice("파일이름2", QuestionContent.FIXED_QUESTION2);
+        Voice voice3 = createVoice("파일이름3", QuestionContent.UNFIXED_QUESTION1);
+        Answer answer1 = createAnswer(voice1, "질문에 대한 답변 텍스트1");
+        Answer answer2 = createAnswer(voice2, "질문에 대한 답변 텍스트2");
+        Answer answer3 = createAnswer(voice3, "질문에 대한 답변 텍스트3");
+        answer1.connectAnalysis(analysis);
+        answer2.connectAnalysis(analysis);
+        answer3.connectAnalysis(analysis);
+
+        voiceRepository.saveAll(List.of(voice1,voice2,voice3));
+        answerRepository.saveAll(List.of(answer1,answer2,answer3));
+        analysisRepository.save(analysis);
+
+        //when
+        Optional<Analysis> result = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysis.getId());
+        //then
+        result.ifPresent(findAnalysis ->{
+            assertThat(findAnalysis).isNotNull();
+            List<Answer> answers = findAnalysis.getAnswers();
+            assertThat(answers).hasSize(3);
+            assertThat(answers)
+                    .extracting("content")
+                    .containsExactlyInAnyOrder(
+                            "질문에 대한 답변 텍스트1",
+                            "질문에 대한 답변 텍스트2",
+                            "질문에 대한 답변 텍스트3"
+                            //"질문에 대한 답변 텍스트4"
+                    );
+            assertThat(answers)
+                    .extracting("voice.originName")
+                    .containsExactlyInAnyOrder(
+                            "파일이름1",
+                            "파일이름2",
+                            "파일이름3"
+                            //"파일이름4"
+                    );
+        });
+    }
+
+    private static Voice createVoice(String fileName, QuestionContent questionContent) {
+        return Voice.initVoiceContentBuilder()
+                .originName(fileName)
+                .questionContent(questionContent)
+                .build();
+    }
+
+    private static Answer createAnswer(Voice voice, String content) {
+        return Answer.builder()
+                .voice(voice)
+                .content(content)
+                .build();
     }
 
     private static Question createQuestion(QuestionContent questionContent) {

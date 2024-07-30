@@ -207,6 +207,11 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
         ;
     }
 
+
+    /**
+     * QueryDsl Test
+     */
+
     @Test
     @DisplayName("음성 답변과 답변 정보가 담긴 분석 정보를 조회한다.")
     void searchAnalysisWithVoiceOfAnswer(){
@@ -257,6 +262,7 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
                     );
         });
     }
+
 
     private static Voice createVoice(String fileName, QuestionContent questionContent) {
         return Voice.initVoiceContentBuilder()

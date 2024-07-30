@@ -3,6 +3,7 @@ package com.project.doongdoong.domain.analysis.repository;
 import com.project.doongdoong.domain.IntegrationSupportTest;
 import com.project.doongdoong.domain.analysis.dto.response.FeelingStateResponseDto;
 import com.project.doongdoong.domain.analysis.model.Analysis;
+import com.project.doongdoong.domain.analysis.service.AnalysisServiceImp;
 import com.project.doongdoong.domain.answer.model.Answer;
 import com.project.doongdoong.domain.answer.repository.AnswerRepository;
 import com.project.doongdoong.domain.question.model.Question;
@@ -18,6 +19,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -56,6 +59,51 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
         assertThat(findAnalysis.get().getUser())
                 .isNotNull()
                 .isEqualTo(savedUser);
+
+    }
+
+    @Test
+    @DisplayName("사용자의 분석 결과를 최신순으로 페이징 조회합니다.")
+    void findAllByUserOrderByCreatedTime(){
+        //given
+        User user = createUser("socialId", SocialType.APPLE);
+        User savedUser = userRepository.save(user);
+        int pageNumber = 1;
+        int pageSize = 5;
+        PageRequest pageRequest = PageRequest.of(pageNumber, pageSize);
+
+        Analysis analysis1 = createAnalysis(user);
+        Analysis analysis2 = createAnalysis(user);
+        Analysis analysis3 = createAnalysis(user);
+        Analysis analysis4 = createAnalysis(user);
+        Analysis analysis5 = createAnalysis(user);
+        Analysis analysis6 = createAnalysis(user);
+        Analysis analysis7 = createAnalysis(user);
+        analysis1.changeFeelingStateAndAnalyzeTime(10, null);
+        analysis2.changeFeelingStateAndAnalyzeTime(20, null);
+        analysis3.changeFeelingStateAndAnalyzeTime(30, null);
+        analysis4.changeFeelingStateAndAnalyzeTime(40, null);
+        analysis5.changeFeelingStateAndAnalyzeTime(50, null);
+        analysis6.changeFeelingStateAndAnalyzeTime(60, null);
+        analysis7.changeFeelingStateAndAnalyzeTime(70, null);
+
+        analysisRepository.saveAll(List.of(analysis1, analysis2, analysis3, analysis4, analysis5, analysis6, analysis7));
+
+        //when
+        Page<Analysis> result = analysisRepository.findAllByUserOrderByCreatedTime(savedUser, pageRequest);
+
+        //then
+        assertThat(result.hasNext()).isFalse();
+        assertThat(result.getTotalElements()).isEqualTo(7);
+        assertThat(result.getContent())
+                .hasSize(2)
+                .extracting("user.socialId", "feelingState")
+                .containsExactly(
+                        tuple("socialId", 60.0),
+                        tuple("socialId", 70.0)
+                );
+
+
 
     }
 

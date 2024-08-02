@@ -45,7 +45,6 @@ public class AnalysisServiceImp implements AnalysisService{
     private final QuestionService questionService;
     private final VoiceService voiceService;
     private final WebClientUtil webClientUtil;
-    private final static long WEEK_TIME = 60 * 60 * 24 * 7;
 
     private final static int ANALYSIS_PAGE_SIZE = 10;
     private final static double ANALYSIS_VOICE_RATE = 0.35;
@@ -107,13 +106,13 @@ public class AnalysisServiceImp implements AnalysisService{
 
         Map<QuestionContent, String> voiceMap = mapVoiceToQuestionInformation(findVoices);
         List<String> questionVoiceAccessUrls = questionContents.stream()
-                .map(voiceMap::get)
+                .map(key -> voiceMap.get(key))
                 .collect(Collectors.toList());
 
         List<String> answerContents = questions.stream()
                 .map(question -> Optional.ofNullable(question.getAnswer())
                         .map(answer -> answer.getContent())
-                        .orElse(null))
+                        .orElseGet(null))
                 .collect(Collectors.toList());
 
 

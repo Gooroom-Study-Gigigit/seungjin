@@ -3,6 +3,7 @@ package com.project.doongdoong.domain.analysis.service;
 import com.project.doongdoong.domain.IntegrationSupportTest;
 import com.project.doongdoong.domain.analysis.dto.response.AnalysisCreateResponseDto;
 import com.project.doongdoong.domain.analysis.dto.response.AnalysisDetailResponse;
+import com.project.doongdoong.domain.analysis.dto.response.AnaylsisListResponseDto;
 import com.project.doongdoong.domain.analysis.exception.AnalysisNotFoundException;
 import com.project.doongdoong.domain.analysis.model.Analysis;
 import com.project.doongdoong.domain.analysis.repository.AnalysisRepository;
@@ -23,7 +24,6 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
-import java.util.Random;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.*;
@@ -204,11 +204,67 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
     @DisplayName("특정 사용자의 분석 정보 리스트를 페이징합니다.")
     void getAnalysisList(){
         //given
+        String socialId = "socialId";
+        SocialType socialType = SocialType.APPLE;
+        User user = createUser(socialId, socialType);
+        User savedUser = userRepository.save(user);
+
+        Question question1 = createQuestion(QuestionContent.FIXED_QUESTION1);
+        Question question2 = createQuestion(QuestionContent.FIXED_QUESTION2);
+        Question question3 = createQuestion(QuestionContent.FIXED_QUESTION3);
+        Question question4 = createQuestion(QuestionContent.UNFIXED_QUESTION3);
+        Question question5 = createQuestion(QuestionContent.UNFIXED_QUESTION1);
+        Question question6 = createQuestion(QuestionContent.UNFIXED_QUESTION4);
+        List<Question> questions1 = List.of(question1, question2, question4, question5);
+        List<Question> questions2 = List.of(question2, question3, question5, question6);
+
+        Analysis analysis1 = createAnalysis(savedUser, questions1);
+        Analysis analysis2 = createAnalysis(savedUser, questions1);
+        Analysis analysis3 = createAnalysis(savedUser, questions1);
+        Analysis analysis4 = createAnalysis(savedUser, questions2);
+        Analysis analysis5 = createAnalysis(savedUser, questions2);
+        Analysis analysis6 = createAnalysis(savedUser, questions2);
+        Analysis analysis7 = createAnalysis(savedUser, questions2);
+        List<Analysis> analysies = List.of(analysis1, analysis2, analysis3, analysis4, analysis5, analysis6, analysis7);
+        analysisRepository.saveAll(analysies);
+
+        String uniqueValue = socialId + "_" + socialType.getText();
+        int pageNumber = 0;
 
         //when
+        AnaylsisListResponseDto response = analysisService.getAnalysisList(uniqueValue, pageNumber);
 
         //then
+        assertThat(response)
+                .extracting("pageNumber", "totalPage")
+                .containsExactly(1, 1);
 
+        assertThat(response.getAnaylsisResponseDtoList())
+                .hasSize(analysies.size())
+                .extracting("analysisId", "questionContent")
+                .containsExactlyInAnyOrder(
+                        tuple(analysis1.getId(), questions1.stream()
+                                .map(question -> question.getQuestionContent().getText())
+                                .collect(Collectors.toList())),
+                        tuple(analysis2.getId(), questions1.stream()
+                                .map(question -> question.getQuestionContent().getText())
+                                .collect(Collectors.toList())),
+                        tuple(analysis3.getId(), questions1.stream()
+                                .map(question -> question.getQuestionContent().getText())
+                                .collect(Collectors.toList())),
+                        tuple(analysis4.getId(), questions2.stream()
+                                .map(question -> question.getQuestionContent().getText())
+                                .collect(Collectors.toList())),
+                        tuple(analysis5.getId(), questions2.stream()
+                                .map(question -> question.getQuestionContent().getText())
+                                .collect(Collectors.toList())),
+                        tuple(analysis6.getId(), questions2.stream()
+                                .map(question -> question.getQuestionContent().getText())
+                                .collect(Collectors.toList())),
+                        tuple(analysis7.getId(), questions2.stream()
+                                .map(question -> question.getQuestionContent().getText())
+                                .collect(Collectors.toList()))
+                );
     }
 
 

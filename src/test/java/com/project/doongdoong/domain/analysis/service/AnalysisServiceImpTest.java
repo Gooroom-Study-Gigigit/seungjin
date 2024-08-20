@@ -3,6 +3,7 @@ package com.project.doongdoong.domain.analysis.service;
 import com.project.doongdoong.domain.IntegrationSupportTest;
 import com.project.doongdoong.domain.analysis.dto.response.AnalysisCreateResponseDto;
 import com.project.doongdoong.domain.analysis.dto.response.AnalysisDetailResponse;
+import com.project.doongdoong.domain.analysis.exception.AnalysisNotFoundException;
 import com.project.doongdoong.domain.analysis.model.Analysis;
 import com.project.doongdoong.domain.analysis.repository.AnalysisRepository;
 import com.project.doongdoong.domain.answer.model.Answer;
@@ -22,14 +23,15 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
+import java.util.Random;
 import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.*;
 
 class AnalysisServiceImpTest extends IntegrationSupportTest {
 
-    // TODO: 2024-08-01 : 전체 완료까지 총 6개 테스트 작성 필요.
-    // TODO: 2024-08-01 : 완료 메서드 : createAnalysis
+    // TODO: 2024-08-01 : 남은 메서드 : getAnalysisList 등
+    // TODO: 2024-08-01 : 완료 메서드 : createAnalysis, getAnalysis
 
     @Autowired AnalysisService analysisService;
 
@@ -151,6 +153,62 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
                                 .map(answer -> answer.getContent())
                                 .collect(Collectors.toList())
                 );
+    }
+
+    // TODO: 2024-08-02 : getAnalysis 메서드 예외 케이스(없는 Analysis 조회하는 경우)
+    @Test
+    @DisplayName("존재하지 않는 분석 정보를 조회하는 경우, 예외가 발생합니다.")
+    void getAnalysis_AnalysisNotFoundException(){
+        //given
+        for(QuestionContent questionContent : QuestionContent.values()){ // initProvider 대체 -> TEST용
+            Voice voice = Voice.initVoiceContentBuilder()
+                    .originName(questionContent.getText() +"_voice.mp3")
+                    .questionContent(questionContent)
+                    .build();
+            voice.changeAccessUrl("임의의 접근 url 주소");
+            voiceRepository.save(voice);
+        }
+        Answer answer1 = createAnswer("답변1보이스를 STT로 변경한 텍스트");
+        Answer answer2 = createAnswer("답변2보이스를 STT로 변경한 텍스트");
+        Answer answer3 = createAnswer("답변3보이스를 STT로 변경한 텍스트");
+        Answer answer4 = createAnswer("답변4보이스를 STT로 변경한 텍스트");
+        List<Answer> answers = List.of(answer1, answer2, answer3, answer4);
+        answerRepository.saveAll(answers);
+
+        Question question1 = createQuestion(QuestionContent.FIXED_QUESTION1);
+        Question question2 = createQuestion(QuestionContent.FIXED_QUESTION2);
+        Question question3 = createQuestion(QuestionContent.UNFIXED_QUESTION1);
+        Question question4 = createQuestion(QuestionContent.UNFIXED_QUESTION3);
+        List<Question> questions = List.of(question1, question2, question3, question4);
+
+        String socialId = "socialId";
+        SocialType socialType =SocialType.APPLE;
+        User user = createUser(socialId, socialType);
+        User savedUser = userRepository.save(user);
+
+
+        Analysis analysis = createAnalysis(savedUser, questions);
+
+        Analysis savedAnalysis = analysisRepository.save(analysis);
+        Long analysisId = savedAnalysis.getId();
+        Long anyLongValue = 10L;
+        Long notFoundAnalysisId = analysisId + anyLongValue;
+
+        //when & then
+        assertThatThrownBy(() -> analysisService.getAnalysis(notFoundAnalysisId))
+                .isInstanceOf(AnalysisNotFoundException.class)
+                .hasMessage("해당 분석은 존재하지 않습니다.");
+
+    }
+    @Test
+    @DisplayName("특정 사용자의 분석 정보 리스트를 페이징합니다.")
+    void getAnalysisList(){
+        //given
+
+        //when
+
+        //then
+
     }
 
 

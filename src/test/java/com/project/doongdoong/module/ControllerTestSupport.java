@@ -1,4 +1,4 @@
-package com.project.doongdoong.domain;
+package com.project.doongdoong.module;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.project.doongdoong.domain.counsel.controller.CounselController;

@@ -1,6 +1,6 @@
 package com.project.doongdoong.domain.counsel.service;
 
-import com.project.doongdoong.domain.IntegrationSupportTest;
+import com.project.doongdoong.module.IntegrationSupportTest;
 import com.project.doongdoong.domain.analysis.exception.AnalysisAccessDeny;
 import com.project.doongdoong.domain.analysis.model.Analysis;
 import com.project.doongdoong.domain.analysis.repository.AnalysisRepository;

@@ -1,6 +1,7 @@
 package com.project.doongdoong.domain.analysis.service;
 
-import com.project.doongdoong.domain.IntegrationSupportTest;
+import com.project.doongdoong.domain.analysis.dto.response.FeelingStateResponseListDto;
+import com.project.doongdoong.module.IntegrationSupportTest;
 import com.project.doongdoong.domain.analysis.dto.response.AnalysisCreateResponseDto;
 import com.project.doongdoong.domain.analysis.dto.response.AnalysisDetailResponse;
 import com.project.doongdoong.domain.analysis.dto.response.AnaylsisListResponseDto;
@@ -21,11 +22,15 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.format.DateTimeFormatter;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Collectors;
 
+import static java.time.LocalDate.now;
 import static org.assertj.core.api.Assertions.*;
 
 class AnalysisServiceImpTest extends IntegrationSupportTest {
@@ -129,7 +134,7 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
         userRepository.save(user);
         Analysis savedAnalysis = analysisRepository.save(analysis);
 
-        LocalDate analyzeTime = LocalDate.now();
+        LocalDate analyzeTime = now();
         double feelingState = 72.1;
         analysis.changeFeelingStateAndAnalyzeTime(feelingState, analyzeTime);
 
@@ -159,7 +164,6 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
                 );
     }
 
-    // TODO: 2024-08-02 : getAnalysis 메서드 예외 케이스(없는 Analysis 조회하는 경우)
     @Test
     @DisplayName("존재하지 않는 분석 정보를 조회하는 경우, 예외가 발생합니다.")
     void getAnalysis_AnalysisNotFoundException(){
@@ -271,6 +275,71 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
                 );
     }
 
+    @Test
+    @DisplayName("가장 최근 감정 분석 결과 날짜를 기준으로 과거 7일 동안 일자 별 평균 분석 점수 목록을 제공한다.")
+    void getAnalysisListGroupByDay(){
+        //given
+        String socialId = "socialId";
+        SocialType socialType = SocialType.APPLE;
+        User user = createUser(socialId, socialType);
+        User savedUser = userRepository.save(user);
+        String uniqueValue = savedUser.getSocialId() + "_" + savedUser.getSocialType().getText();
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-M-d");
+
+        List<Analysis> arrayList = new ArrayList<>();
+        LocalDate nowDate = now();
+        double score1 = 10.0;
+        for (int i = 0; i < 3; i++) { // 오늘 데이터 3개 추가
+            Analysis analysis = createAnalysis(user);
+            arrayList.add(analysis);
+            analysis.changeFeelingStateAndAnalyzeTime(score1, nowDate);
+        }
+        LocalDate dateTwoDaysAgo = now().minusDays(2);
+        double score2 = 30.0;
+        for (int i = 0; i < 3; i++) { // 2일 전 데이터 4개 추가
+            Analysis analysis = createAnalysis(user);
+            arrayList.add(analysis);
+            analysis.changeFeelingStateAndAnalyzeTime(score2, dateTwoDaysAgo);
+        }
+        LocalDate dateFourDaysAgo = now().minusDays(4);
+        double score3 = 40.0;
+        for (int i = 0; i < 4; i++) {        // 4일 전 데이터 4개 추가
+            Analysis analysis = createAnalysis(user);
+            arrayList.add(analysis);
+            analysis.changeFeelingStateAndAnalyzeTime(score3, dateFourDaysAgo);
+        }
+        LocalDate dateFiveDaysAgo = now().minusDays(5);
+        double score4 = 50.0;
+        for (int i = 0; i < 3; i++) { // 5일 전 데이터 2개 추가
+            Analysis analysis = createAnalysis(user);
+            arrayList.add(analysis);
+            analysis.changeFeelingStateAndAnalyzeTime(score4, dateFiveDaysAgo);
+        }
+        LocalDate dateSevenDaysAgo = now().minusDays(7);
+        double score5 = 60.0;
+        for (int i = 0; i < 2; i++) { // 7일 전 데이터 2개 추가
+            Analysis analysis = createAnalysis(user);
+            arrayList.add(analysis);
+            analysis.changeFeelingStateAndAnalyzeTime(score5, dateSevenDaysAgo);
+        }
+        analysisRepository.saveAll(arrayList);
+
+        //when
+        FeelingStateResponseListDto result = analysisService.getAnalysisListGroupByDay(uniqueValue);
+
+        //then
+        assertThat(result.getFeelingStateResponsesDto())
+                .hasSize(4)
+                .extracting("date", "avgFeelingState")
+                .containsExactlyInAnyOrder(
+                        tuple(nowDate.format(formatter), score1),
+                        tuple(dateTwoDaysAgo.format(formatter), score2),
+                        tuple(dateFourDaysAgo.format(formatter), score3),
+                        tuple(dateFiveDaysAgo.format(formatter), score4)
+                );
+    }
+
+
 
     private static Answer createAnswer(String content) {
         return Answer.builder()
@@ -290,6 +359,12 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
         return Analysis.builder()
                 .user(user)
                 .questions(questions)
+                .build();
+    }
+
+    private static Analysis createAnalysis(User user) {
+        return Analysis.builder()
+                .user(user)
                 .build();
     }
 

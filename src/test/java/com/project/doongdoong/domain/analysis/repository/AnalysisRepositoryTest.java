@@ -1,9 +1,8 @@
 package com.project.doongdoong.domain.analysis.repository;
 
-import com.project.doongdoong.domain.IntegrationSupportTest;
+import com.project.doongdoong.module.IntegrationSupportTest;
 import com.project.doongdoong.domain.analysis.dto.response.FeelingStateResponseDto;
 import com.project.doongdoong.domain.analysis.model.Analysis;
-import com.project.doongdoong.domain.analysis.service.AnalysisServiceImp;
 import com.project.doongdoong.domain.answer.model.Answer;
 import com.project.doongdoong.domain.answer.repository.AnswerRepository;
 import com.project.doongdoong.domain.question.model.Question;

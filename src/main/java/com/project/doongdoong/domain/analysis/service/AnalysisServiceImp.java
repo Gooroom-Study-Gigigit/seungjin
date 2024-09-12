@@ -47,7 +47,7 @@ public class AnalysisServiceImp implements AnalysisService{
     private final WebClientUtil webClientUtil;
 
     private final static int ANALYSIS_PAGE_SIZE = 10;
-    private final static double ANALYSIS_VOICE_RATE = 0.35;
+    private final static double ANALYSIS_VOICE_RATE = 0.65;
     private final static double ANALYSIS_TEXT_RATE = 0.35;
 
     @Transactional
@@ -220,10 +220,10 @@ public class AnalysisServiceImp implements AnalysisService{
                 .map(answer -> answer.getVoice())
                 .collect(Collectors.toList());
 
-        if(voices.size() != MAX_ANSWER_COUNT){ //만약 모든 질문에 대한 답변이 없는 경우, 답변이 부족하다는 예외 발생
+        if(isAllAnswerdBy(voices)){ //만약 모든 질문에 대한 답변이 없는 경우, 답변이 부족하다는 예외 발생
             throw new AllAnswersNotFoundException();
         }
-        if (Optional.of(findAnalysis.getAnalyzeTime()).isPresent()) { // 분석은 1번만 가능
+        if (isAlreadyAnalyzed(findAnalysis)) { // 분석은 1번만 가능
             throw new AlreadyAnalyzedException();
         }
 
@@ -235,14 +235,8 @@ public class AnalysisServiceImp implements AnalysisService{
             answers.get(i).changeContent(responseByText.get(i).getTranscribedText());
         }
 
-        double resultByText = responseByText.stream() // 3. 처리가 끝나면 double값 4개 값을 평균 내서 감정 수치 값 반환하기
-                .mapToDouble(value -> value.getFeelingState())
-                .average()
-                .getAsDouble();
-        double resultByVoice = responseByVoice.stream()
-                .mapToDouble(value -> value.getFeelingState())
-                .average()
-                .getAsDouble();
+        double resultByText = caluateFellingStatusAverage(responseByText);
+        double resultByVoice = caluateFellingStatusAverage(responseByVoice);
         double result = ANALYSIS_TEXT_RATE * resultByText + ANALYSIS_VOICE_RATE * resultByVoice;
 
         findAnalysis.changeFeelingStateAndAnalyzeTime(result, LocalDate.now());
@@ -252,9 +246,24 @@ public class AnalysisServiceImp implements AnalysisService{
                 .build();
     }
 
+    private double caluateFellingStatusAverage(List<FellingStateCreateResponse> responseByText) {
+        return responseByText.stream() // 3. 처리가 끝나면 double값 4개 값을 평균 내서 감정 수치 값 반환하기
+                .mapToDouble(value -> value.getFeelingState())
+                .average()
+                .getAsDouble();
+    }
+
+    private boolean isAllAnswerdBy(List<Voice> voices) {
+        return voices.size() != MAX_ANSWER_COUNT;
+    }
+
+    private boolean isAlreadyAnalyzed(Analysis findAnalysis) {
+        return findAnalysis.getAnalyzeTime() != null ? true : false;
+    }
+
     private boolean checkFirstGrowthToday(User user) {
         List<Analysis> list = user.getAnalysisList().stream()
-                .filter(analysis ->   analysis.getAnalyzeTime().equals(LocalDate.now()))
+                .filter(analysis ->   LocalDate.now().equals(analysis.getAnalyzeTime()))
                 .collect(Collectors.toList());
         return list.size() == 0 ? true : false;
     }

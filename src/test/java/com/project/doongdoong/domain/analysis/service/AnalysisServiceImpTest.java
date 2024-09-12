@@ -1,10 +1,9 @@
 package com.project.doongdoong.domain.analysis.service;
 
-import com.project.doongdoong.domain.analysis.dto.response.FeelingStateResponseListDto;
+import com.project.doongdoong.domain.analysis.dto.response.*;
+import com.project.doongdoong.domain.analysis.exception.AllAnswersNotFoundException;
+import com.project.doongdoong.domain.analysis.exception.AlreadyAnalyzedException;
 import com.project.doongdoong.module.IntegrationSupportTest;
-import com.project.doongdoong.domain.analysis.dto.response.AnalysisCreateResponseDto;
-import com.project.doongdoong.domain.analysis.dto.response.AnalysisDetailResponse;
-import com.project.doongdoong.domain.analysis.dto.response.AnaylsisListResponseDto;
 import com.project.doongdoong.domain.analysis.exception.AnalysisNotFoundException;
 import com.project.doongdoong.domain.analysis.model.Analysis;
 import com.project.doongdoong.domain.analysis.repository.AnalysisRepository;
@@ -22,16 +21,15 @@ import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 import static java.time.LocalDate.now;
 import static org.assertj.core.api.Assertions.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.when;
 
 class AnalysisServiceImpTest extends IntegrationSupportTest {
 
@@ -86,7 +84,7 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
 
                 }),
                 DynamicTest.dynamicTest("존재하지 않는 사용자 정보로는 분석 관련 정보에 접근할 수 없습니다.", () -> {
-                    //when
+                    //given
                     User user2 = createUser("notFoundSocialId", SocialType.GOOGLE);
                     String uniqueValue2 = user2.getSocialId() + "_" + user2.getSocialType();
                     //when & then
@@ -339,6 +337,100 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
                 );
     }
 
+    @TestFactory
+    @DisplayName("여러 경우에 대한 감정 분석 시나리오 테스트")
+    Collection<DynamicTest> analyzeEmotion(){
+        //given
+        String socialId = "socialId";
+        SocialType socialType = SocialType.APPLE;
+        User user = createUser(socialId, socialType);
+        User savedUser = userRepository.save(user);
+        String uniqueValue = savedUser.getSocialId() + "_" + savedUser.getSocialType().getText();
+
+        Question question1 = createQuestion(QuestionContent.FIXED_QUESTION1);
+        Question question2 = createQuestion(QuestionContent.FIXED_QUESTION2);
+        Question question3 = createQuestion(QuestionContent.UNFIXED_QUESTION1);
+        Question question4 = createQuestion(QuestionContent.UNFIXED_QUESTION2);
+        Analysis analysis = createAnalysis(savedUser, List.of(question1, question2, question3, question4));
+        Analysis savedAnalysis = analysisRepository.save(analysis);
+
+        //when & then
+        return List.of(
+            DynamicTest.dynamicTest("모든 질문에 대한 답변이 없는 분석 정보를 감정 분석할 수 없습니다.", () -> {
+                //when & then
+                assertThatThrownBy(() -> analysisService.analyzeEmotion(savedAnalysis.getId(), uniqueValue))
+                        .isInstanceOf(AllAnswersNotFoundException.class)
+                        .hasMessage("질문에 해당하는 모든 답변이 존재하지 않습니다.");
+
+            }),
+            DynamicTest.dynamicTest("각 질문에 대한 모든 답변이 이뤄진 분석 정보는 감정 분석으로 감정 상태 결과값을 만든다.", () -> {
+                // given
+                Answer answer1 = createAnswer("질문1에 대한 분석 완료");
+                Answer answer2 = createAnswer("질문2에 대한 분석 완료");
+                Answer answer3 = createAnswer("질문3에 대한 분석 완료");
+                Answer answer4 = createAnswer("질문4에 대한 분석 완료");
+                answer1.connectAnalysis(analysis);
+                answer2.connectAnalysis(analysis);
+                answer3.connectAnalysis(analysis);
+                answer4.connectAnalysis(analysis);
+
+                List<FellingStateCreateResponse> responseListByText = new ArrayList<>();
+                List<FellingStateCreateResponse> responseListByVoice = new ArrayList<>();
+                for(int index=0; index<4; index++){
+                    double randomValue1 = 3, randomValue2 = 5;
+                    responseListByText.add(createFellingStatus(randomValue1, index));
+                    responseListByVoice.add(createFellingStatus(randomValue2, index));
+                }
+                when(webClientUtil.callAnalyzeEmotion(any(List.class)))
+                        .thenReturn(responseListByText);
+                when(webClientUtil.callAnalyzeEmotionVoice(any(List.class)))
+                        .thenReturn(responseListByVoice);
+
+                double analysisTextRate = 0.35;
+                double analysisVoiceRate = 0.65;
+                double resultStatus = analysisTextRate * averageFellingStatusBy(responseListByText)
+                        + analysisVoiceRate * averageFellingStatusBy(responseListByVoice);
+                //when
+                FellingStateCreateResponse result = analysisService.analyzeEmotion(savedAnalysis.getId(), uniqueValue);
+                //then
+                assertThat(result)
+                        .extracting("transcribedText", "feelingState")
+                        .containsExactly(null, resultStatus);
+
+                assertThat(savedAnalysis)
+                        .extracting("feelingState")
+                        .isEqualTo(resultStatus);
+
+            }),
+                DynamicTest.dynamicTest("이미 감정 분석된 분석 정보는 더 이상 감정 분석할 수 없습니다." ,() -> {
+                    // when & then
+                    assertThatThrownBy(() -> analysisService.analyzeEmotion(savedAnalysis.getId(), uniqueValue))
+                            .isInstanceOf(AlreadyAnalyzedException.class)
+                            .hasMessage("이미 분석했습니다.");
+                })
+        );
+
+
+    }
+
+    private static double averageFellingStatusBy(List<FellingStateCreateResponse> responseListByText) {
+        return responseListByText.stream()
+                .mapToDouble(value -> value.getFeelingState())
+                .average().getAsDouble();
+    }
+
+    private static FellingStateCreateResponse createFellingStatus(double randomValue, int index) {
+        return FellingStateCreateResponse.builder()
+                .feelingState(30.0 + randomValue)
+                .transcribedText("음성 답변을 텍스트로 변환한 답변 텍스트" + index)
+                .build();
+    }
+
+    private static Voice createVoice(String fileName) {
+        return Voice.commonBuilder()
+                .originName(fileName)
+                .build();
+    }
 
 
     private static Answer createAnswer(String content) {

@@ -17,6 +17,7 @@ import com.project.doongdoong.domain.user.model.User;
 import com.project.doongdoong.domain.user.repository.UserRepository;
 import com.project.doongdoong.domain.voice.model.Voice;
 import com.project.doongdoong.domain.voice.repository.VoiceRepository;
+import org.hibernate.query.sqm.mutation.internal.cte.CteInsertStrategy;
 import org.junit.jupiter.api.*;
 import org.springframework.beans.factory.annotation.Autowired;
 
@@ -29,6 +30,7 @@ import static java.time.LocalDate.now;
 import static org.assertj.core.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class AnalysisServiceImpTest extends IntegrationSupportTest {
@@ -339,7 +341,7 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
 
     @TestFactory
     @DisplayName("여러 경우에 대한 감정 분석 시나리오 테스트")
-    Collection<DynamicTest> analyzeEmotion(){
+    java.util.Collection<DynamicTest> analyzeEmotion(){
         //given
         String socialId = "socialId";
         SocialType socialType = SocialType.APPLE;
@@ -356,52 +358,52 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
 
         //when & then
         return List.of(
-            DynamicTest.dynamicTest("모든 질문에 대한 답변이 없는 분석 정보를 감정 분석할 수 없습니다.", () -> {
-                //when & then
-                assertThatThrownBy(() -> analysisService.analyzeEmotion(savedAnalysis.getId(), uniqueValue))
-                        .isInstanceOf(AllAnswersNotFoundException.class)
-                        .hasMessage("질문에 해당하는 모든 답변이 존재하지 않습니다.");
+                DynamicTest.dynamicTest("모든 질문에 대한 답변이 없는 분석 정보를 감정 분석할 수 없습니다.", () -> {
+                    //when & then
+                    assertThatThrownBy(() -> analysisService.analyzeEmotion(savedAnalysis.getId(), uniqueValue))
+                            .isInstanceOf(AllAnswersNotFoundException.class)
+                            .hasMessage("질문에 해당하는 모든 답변이 존재하지 않습니다.");
 
-            }),
-            DynamicTest.dynamicTest("각 질문에 대한 모든 답변이 이뤄진 분석 정보는 감정 분석으로 감정 상태 결과값을 만든다.", () -> {
-                // given
-                Answer answer1 = createAnswer("질문1에 대한 분석 완료");
-                Answer answer2 = createAnswer("질문2에 대한 분석 완료");
-                Answer answer3 = createAnswer("질문3에 대한 분석 완료");
-                Answer answer4 = createAnswer("질문4에 대한 분석 완료");
-                answer1.connectAnalysis(analysis);
-                answer2.connectAnalysis(analysis);
-                answer3.connectAnalysis(analysis);
-                answer4.connectAnalysis(analysis);
+                }),
+                DynamicTest.dynamicTest("각 질문에 대한 모든 답변이 이뤄진 분석 정보는 감정 분석으로 감정 상태 결과값을 만든다.", () -> {
+                    // given
+                    Answer answer1 = createAnswer("질문1에 대한 분석 완료");
+                    Answer answer2 = createAnswer("질문2에 대한 분석 완료");
+                    Answer answer3 = createAnswer("질문3에 대한 분석 완료");
+                    Answer answer4 = createAnswer("질문4에 대한 분석 완료");
+                    answer1.connectAnalysis(analysis);
+                    answer2.connectAnalysis(analysis);
+                    answer3.connectAnalysis(analysis);
+                    answer4.connectAnalysis(analysis);
 
-                List<FellingStateCreateResponse> responseListByText = new ArrayList<>();
-                List<FellingStateCreateResponse> responseListByVoice = new ArrayList<>();
-                for(int index=0; index<4; index++){
-                    double randomValue1 = 3, randomValue2 = 5;
-                    responseListByText.add(createFellingStatus(randomValue1, index));
-                    responseListByVoice.add(createFellingStatus(randomValue2, index));
-                }
-                when(webClientUtil.callAnalyzeEmotion(any(List.class)))
-                        .thenReturn(responseListByText);
-                when(webClientUtil.callAnalyzeEmotionVoice(any(List.class)))
-                        .thenReturn(responseListByVoice);
+                    List<FellingStateCreateResponse> responseListByText = new ArrayList<>();
+                    List<FellingStateCreateResponse> responseListByVoice = new ArrayList<>();
+                    for(int index=0; index<4; index++){
+                        double randomValue1 = 3, randomValue2 = 5;
+                        responseListByText.add(createFellingStatus(randomValue1, index));
+                        responseListByVoice.add(createFellingStatus(randomValue2, index));
+                    }
+                    when(webClientUtil.callAnalyzeEmotion(any(List.class)))
+                            .thenReturn(responseListByText);
+                    when(webClientUtil.callAnalyzeEmotionVoice(any(List.class)))
+                            .thenReturn(responseListByVoice);
 
-                double analysisTextRate = 0.35;
-                double analysisVoiceRate = 0.65;
-                double resultStatus = analysisTextRate * averageFellingStatusBy(responseListByText)
-                        + analysisVoiceRate * averageFellingStatusBy(responseListByVoice);
-                //when
-                FellingStateCreateResponse result = analysisService.analyzeEmotion(savedAnalysis.getId(), uniqueValue);
-                //then
-                assertThat(result)
-                        .extracting("transcribedText", "feelingState")
-                        .containsExactly(null, resultStatus);
+                    double analysisTextRate = 0.35;
+                    double analysisVoiceRate = 0.65;
+                    double resultStatus = analysisTextRate * averageFellingStatusBy(responseListByText)
+                            + analysisVoiceRate * averageFellingStatusBy(responseListByVoice);
+                    //when
+                    FellingStateCreateResponse result = analysisService.analyzeEmotion(savedAnalysis.getId(), uniqueValue);
+                    //then
+                    assertThat(result)
+                            .extracting("transcribedText", "feelingState")
+                            .containsExactly(null, resultStatus);
 
-                assertThat(savedAnalysis)
-                        .extracting("feelingState")
-                        .isEqualTo(resultStatus);
+                    assertThat(savedAnalysis)
+                            .extracting("feelingState")
+                            .isEqualTo(resultStatus);
 
-            }),
+                }),
                 DynamicTest.dynamicTest("이미 감정 분석된 분석 정보는 더 이상 감정 분석할 수 없습니다." ,() -> {
                     // when & then
                     assertThatThrownBy(() -> analysisService.analyzeEmotion(savedAnalysis.getId(), uniqueValue))
@@ -411,6 +413,48 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
         );
 
 
+    }
+
+    @Test
+    @DisplayName("존재하는 분석을 삭제합니다.")
+    void removeAnaylsis(){
+        //given
+        for(QuestionContent questionContent : QuestionContent.values()){ // initProvider 대체 -> TEST용
+            Voice voice = Voice.initVoiceContentBuilder()
+                    .originName(questionContent.getText() +"_voice.mp3")
+                    .questionContent(questionContent)
+                    .build();
+            voice.changeAccessUrl("임의의 접근 url 주소");
+            voiceRepository.save(voice);
+        }
+
+        Answer answer1 = createAnswer("답변1보이스를 STT로 변경한 텍스트");
+        Answer answer2 = createAnswer("답변2보이스를 STT로 변경한 텍스트");
+        Answer answer3 = createAnswer("답변3보이스를 STT로 변경한 텍스트");
+        Answer answer4 = createAnswer("답변4보이스를 STT로 변경한 텍스트");
+        List<Answer> answers = List.of(answer1, answer2, answer3, answer4);
+        answerRepository.saveAll(answers);
+
+        User user = createUser("socialId", SocialType.APPLE);
+        Question question1 = createQuestion(QuestionContent.FIXED_QUESTION1);
+        Question question2 = createQuestion(QuestionContent.FIXED_QUESTION2);
+        Question question3 = createQuestion(QuestionContent.UNFIXED_QUESTION1);
+        Question question4 = createQuestion(QuestionContent.UNFIXED_QUESTION3);
+        List<Question> questions = List.of(question1, question2, question3, question4);
+        Analysis analysis = createAnalysis(user, questions);
+
+        question1.connectAnswer(answer1);
+        question2.connectAnswer(answer2);
+        question3.connectAnswer(answer3);
+        question4.connectAnswer(answer4);
+
+        userRepository.save(user);
+        Analysis savedAnalysis = analysisRepository.save(analysis);
+        //when
+        analysisService.removeAnaylsis(savedAnalysis.getId());
+        //then
+        boolean exists = analysisRepository.existsById(savedAnalysis.getId());
+        assertThat(exists).isFalse(); // 삭제되었음을 검증
     }
 
     private static double averageFellingStatusBy(List<FellingStateCreateResponse> responseListByText) {

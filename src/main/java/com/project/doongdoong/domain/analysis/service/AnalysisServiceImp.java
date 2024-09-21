@@ -49,6 +49,8 @@ public class AnalysisServiceImp implements AnalysisService{
     private final static int ANALYSIS_PAGE_SIZE = 10;
     private final static double ANALYSIS_VOICE_RATE = 0.65;
     private final static double ANALYSIS_TEXT_RATE = 0.35;
+    private final static String DEFAULT_NO_ANSWER_MESSAGE = "질문에 대한 답변이 없습니다.";
+    private final static String DEFAULT_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm";
 
     @Transactional
     @Override //        추가적으로 사용자 정보가 있어야 함.
@@ -112,11 +114,11 @@ public class AnalysisServiceImp implements AnalysisService{
         List<String> answerContents = questions.stream()
                 .map(question -> Optional.ofNullable(question.getAnswer())
                         .map(answer -> answer.getContent())
-                        .orElseGet(null))
+                        .orElse(DEFAULT_NO_ANSWER_MESSAGE))
                 .collect(Collectors.toList());
 
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT);
 
         return AnalysisDetailResponse.builder()
                 .analysisId(findAnalysis.getId())
@@ -161,7 +163,7 @@ public class AnalysisServiceImp implements AnalysisService{
         PageRequest pageable = PageRequest.of(pageNumber, ANALYSIS_PAGE_SIZE);
         Page<Analysis> analysisPages = analsisRepository.findAllByUserOrderByCreatedTime(user, pageable);
 
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT);
 
 
         return AnaylsisListResponseDto.builder()

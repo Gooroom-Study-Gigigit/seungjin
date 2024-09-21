@@ -1,24 +1,23 @@
 package com.project.doongdoong.domain.analysis.controller;
 
 import com.project.doongdoong.domain.analysis.dto.response.AnalysisCreateResponseDto;
-import com.project.doongdoong.domain.answer.service.AnswerService;
+import com.project.doongdoong.domain.analysis.dto.response.AnalysisDetailResponse;
 import com.project.doongdoong.module.ControllerTestSupport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.*;
+import static org.mockito.Mockito.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class AnalysisControllerTest extends ControllerTestSupport {
 
@@ -63,6 +62,40 @@ public class AnalysisControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.data.accessUrls[3]").value("url4"));
 
         Mockito.verify(analysisService, times(1)).createAnalysis(uniqueValue);
+
+    }
+
+    @Test
+    @DisplayName("본인의 분석 정보 하나를 조회한다.")
+    @WithMockUser(username = "APPLE_whffkaos007@naver.com")
+    void getAnalysis() throws Exception {
+        //given
+        AnalysisDetailResponse result = AnalysisDetailResponse.builder()
+                .analysisId(1L)
+                .time("yyyy:MM:dd XX:XX")
+                .feelingState(59.0)
+                .questionIds(List.of(1L, 2L, 3L, 4L))
+                .questionContent(List.of("질문1", "질문2", "질문3", "질문4"))
+                .questionContentVoiceUrls(List.of("url1", "url2", "url3", "url4"))
+                .answerContent(List.of("답변1", "답변2", "답변3", "답변4"))
+                .build();
+
+        when(analysisService.getAnalysis(anyLong()))
+                .thenReturn(result);
+
+        // when, then
+        mockMvc.perform(
+                MockMvcRequestBuilders.get("/api/v1/analysis/{id}", anyLong())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                ).andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.analysisId").value(result.getAnalysisId()))
+                .andExpect(jsonPath("$.data.time").value(result.getTime()))
+                .andExpect(jsonPath("$.data.feelingState").value(result.getFeelingState()));
+        // 리스트 형태 값은 생략
+
+        verify(analysisService, times(1)).getAnalysis(anyLong());
 
     }
 

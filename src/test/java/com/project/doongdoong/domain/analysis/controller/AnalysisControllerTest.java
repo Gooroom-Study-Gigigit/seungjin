@@ -2,6 +2,8 @@ package com.project.doongdoong.domain.analysis.controller;
 
 import com.project.doongdoong.domain.analysis.dto.response.AnalysisCreateResponseDto;
 import com.project.doongdoong.domain.analysis.dto.response.AnalysisDetailResponse;
+import com.project.doongdoong.domain.analysis.dto.response.AnaylsisListResponseDto;
+import com.project.doongdoong.domain.analysis.dto.response.AnaylsisResponseDto;
 import com.project.doongdoong.module.ControllerTestSupport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -99,5 +101,36 @@ public class AnalysisControllerTest extends ControllerTestSupport {
 
     }
 
+    @Test
+    @DisplayName("본인의 분석 결과들을 페이징 조회한다.")
+    @WithMockUser(username = "APPLE_whffkaos007@naver.com")
+    void getAnalysisList() throws Exception {
+        //given
+        AnaylsisResponseDto detailResult = AnaylsisResponseDto.builder()
+                .analysisId(1L)
+                .time("test time")
+                .feelingState(30.5)
+                .questionContent(List.of("질문1", "질문2", "질문3", "질문4"))
+                .build();
+
+        AnaylsisListResponseDto result = AnaylsisListResponseDto.builder()
+                .pageNumber(1)
+                .totalPage(1)
+                .anaylsisResponseDtoList(List.of(detailResult))
+                .build();
+
+        when(analysisService.getAnalysisList(anyString(), anyInt()))
+                .thenReturn(result);
+        // when, then
+        mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/analysis")
+                    .with(csrf())
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .param("pageNumber", "1")
+                ).andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.pageNumber").value(result.getPageNumber()))
+                .andExpect(jsonPath("$.data.totalPage").value(result.getTotalPage()))
+                .andExpect(jsonPath("$.data.anaylsisResponseDtoList").isArray());
+    }
 
 }

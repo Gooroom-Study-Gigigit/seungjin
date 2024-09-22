@@ -1,13 +1,16 @@
 package com.project.doongdoong.domain.analysis.controller;
 
 import com.project.doongdoong.domain.analysis.dto.response.*;
+import com.project.doongdoong.domain.answer.dto.AnswerCreateResponseDto;
 import com.project.doongdoong.module.ControllerTestSupport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;
 import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
+import org.springframework.web.multipart.MultipartFile;
 
 import java.util.List;
 
@@ -185,6 +188,39 @@ public class AnalysisControllerTest extends ControllerTestSupport {
                 ).andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.feelingState").value(result.getFeelingState()));
+    }
+    @Test
+    @DisplayName("분석을 위해 제공한 질문들 중 하나의 질문에 대한 음성 파일인 답변을 저장한다.")
+    @WithMockUser
+    void createAnswer() throws Exception {
+        //given
+        Long exampleAnalysisId = 1L;
+        Long exampleAnswerId = 1L;
+        AnswerCreateResponseDto result = AnswerCreateResponseDto.builder()
+                .answerId(exampleAnswerId)
+                .build();
+
+        MockMultipartFile exampleAudioFile = new MockMultipartFile(
+                "file",
+                "testAudio.mp3",
+                MediaType.MULTIPART_FORM_DATA_VALUE,
+                "실제는 음성 데이터야 하지만 테스트 편의성을 위해 텍스트에 대한 바이트 정보 제공".getBytes()
+        );
+
+        when(answerService.createAnswer(exampleAnalysisId, exampleAudioFile, exampleAnswerId))
+                .thenReturn(result);
+
+        //when, then
+        mockMvc.perform(
+                MockMvcRequestBuilders.multipart("/api/v1/analysis/{id}/answer", exampleAnalysisId)
+                        .file(exampleAudioFile)
+                        .contentType(MediaType.MULTIPART_FORM_DATA)
+                        .param("questionId", String.valueOf(exampleAnswerId))
+                        .with(csrf())
+                ).andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.answerId").value(result.getAnswerId()));
+
     }
 
 }

@@ -223,4 +223,17 @@ public class AnalysisControllerTest extends ControllerTestSupport {
 
     }
 
+    @Test
+    @DisplayName("해당하는 분석 관련 정보를 삭제한다.")
+    @WithMockUser
+    void deleteAnalysis() throws Exception {
+        //given, when, then
+        mockMvc.perform(
+                MockMvcRequestBuilders.delete("/api/v1/analysis/{id}", anyLong())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .with(csrf())
+                ).andDo(print())
+                .andExpect(status().isNoContent())
+                .andExpect(jsonPath("$.data").isEmpty());
+    }
 }

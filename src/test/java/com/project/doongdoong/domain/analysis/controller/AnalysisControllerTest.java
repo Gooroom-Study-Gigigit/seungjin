@@ -164,4 +164,27 @@ public class AnalysisControllerTest extends ControllerTestSupport {
                 .build();
     }
 
+    @Test
+    @DisplayName("각 질문에 대한 답볍인 음성 파일과 음성 파일 기반 텍스트를 통해 사용자의 감정 상태를 수치로 나타냅니다.")
+    @WithMockUser
+    void analyzeEmotion() throws Exception {
+        //given
+        double exampleScore = 45.5;
+        Long exampleId = 1L;
+        FellingStateCreateResponse result = FellingStateCreateResponse.builder()
+                .feelingState(exampleScore)
+                .build();
+
+        when(analysisService.analyzeEmotion(anyLong(), anyString()))
+                .thenReturn(result);
+        //when, then
+        mockMvc.perform(
+                MockMvcRequestBuilders.post("/api/v1/analysis/{id}", exampleId)
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                ).andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.feelingState").value(result.getFeelingState()));
+    }
+
 }

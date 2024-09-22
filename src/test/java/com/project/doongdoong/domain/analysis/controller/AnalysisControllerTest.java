@@ -1,9 +1,6 @@
 package com.project.doongdoong.domain.analysis.controller;
 
-import com.project.doongdoong.domain.analysis.dto.response.AnalysisCreateResponseDto;
-import com.project.doongdoong.domain.analysis.dto.response.AnalysisDetailResponse;
-import com.project.doongdoong.domain.analysis.dto.response.AnaylsisListResponseDto;
-import com.project.doongdoong.domain.analysis.dto.response.AnaylsisResponseDto;
+import com.project.doongdoong.domain.analysis.dto.response.*;
 import com.project.doongdoong.module.ControllerTestSupport;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -131,6 +128,40 @@ public class AnalysisControllerTest extends ControllerTestSupport {
                 .andExpect(jsonPath("$.data.pageNumber").value(result.getPageNumber()))
                 .andExpect(jsonPath("$.data.totalPage").value(result.getTotalPage()))
                 .andExpect(jsonPath("$.data.anaylsisResponseDtoList").isArray());
+    }
+
+    @Test
+    @DisplayName("최근 마지막 분석 일을 기준으로 일주일 간 감정 수치 정보를 가져온다.")
+    @WithMockUser
+    void getAnalysesGroupByDay() throws Exception {
+        //given
+        String exampleDate = "yyyy:MM:dd hh:mm";
+        FeelingStateResponseListDto result = FeelingStateResponseListDto.builder()
+                .feelingStateResponsesDto(List.of(
+                        ofFellingStateResponseDto(exampleDate, 30.0)
+                        , ofFellingStateResponseDto(exampleDate, 40.0)
+                        , ofFellingStateResponseDto(exampleDate, 50.0))
+                )
+                .build();
+
+        when(analysisService.getAnalysisListGroupByDay(anyString()))
+                .thenReturn(result);
+
+        //when, then
+        mockMvc.perform(
+                MockMvcRequestBuilders.get("/api/v1/analysis/week")
+                        .contentType(MediaType.APPLICATION_JSON)
+                ).andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.feelingStateResponsesDto").isArray());
+
+    }
+
+    private static FeelingStateResponseDto ofFellingStateResponseDto(String exampleDate, double stateScore) {
+        return FeelingStateResponseDto.builder()
+                .date(exampleDate)
+                .avgFeelingState(stateScore)
+                .build();
     }
 
 }

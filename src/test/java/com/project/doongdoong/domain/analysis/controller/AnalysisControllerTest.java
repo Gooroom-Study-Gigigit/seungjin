@@ -224,6 +224,39 @@ public class AnalysisControllerTest extends ControllerTestSupport {
     }
 
     @Test
+    @DisplayName("분석을 위해 제공한 질문들 중 하나의 질문에 대한 음성 파일이 비어있거나 없다면 저장하지 않습니다.")
+    @WithMockUser
+    void createAnswerException() throws Exception {
+        //given
+        Long exampleAnalysisId = 1L;
+        Long exampleAnswerId = 1L;
+        AnswerCreateResponseDto result = AnswerCreateResponseDto.builder()
+                .answerId(exampleAnswerId)
+                .build();
+
+        MockMultipartFile exampleAudioFile = new MockMultipartFile(
+                "file",
+                "testAudio.mp3",
+                MediaType.MULTIPART_FORM_DATA_VALUE,
+                new byte[0]
+        );
+
+
+        //when, then
+        mockMvc.perform(
+                        MockMvcRequestBuilders.multipart("/api/v1/analysis/{id}/answer", exampleAnalysisId)
+                                .file(exampleAudioFile)
+                                .contentType(MediaType.MULTIPART_FORM_DATA)
+                                .param("questionId", String.valueOf(exampleAnswerId))
+                                .with(csrf())
+                ).andDo(print())
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value(1))
+                .andExpect(jsonPath("$.message").value("파일 자료가 하나도 없습니다."));
+
+    }
+
+    @Test
     @DisplayName("해당하는 분석 관련 정보를 삭제한다.")
     @WithMockUser
     void deleteAnalysis() throws Exception {

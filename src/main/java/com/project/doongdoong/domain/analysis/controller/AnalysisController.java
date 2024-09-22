@@ -2,13 +2,11 @@ package com.project.doongdoong.domain.analysis.controller;
 
 import com.project.doongdoong.domain.analysis.dto.response.*;
 import com.project.doongdoong.domain.analysis.service.AnalysisService;
-import com.project.doongdoong.domain.answer.dto.AnswerCreateRequestDto;
 import com.project.doongdoong.domain.answer.dto.AnswerCreateResponseDto;
 import com.project.doongdoong.domain.answer.service.AnswerService;
 import com.project.doongdoong.domain.image.exception.FileEmptyException;
-import com.project.doongdoong.global.CurrentUser;
+import com.project.doongdoong.global.annotation.CurrentUser;
 import com.project.doongdoong.global.common.ApiResponse;
-import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
@@ -73,7 +71,7 @@ public class AnalysisController {
                                                              @RequestPart("file") MultipartFile file,
                                                              @RequestParam("questionId") Long questionId){
 
-        if(file.isEmpty()){
+        if(file == null || file.isEmpty()){
             throw new FileEmptyException();
         }
 

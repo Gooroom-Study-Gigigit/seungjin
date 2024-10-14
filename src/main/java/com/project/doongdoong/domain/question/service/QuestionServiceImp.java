@@ -21,7 +21,7 @@ public class QuestionServiceImp implements QuestionService {
 
     @Override
     public Question createFixedQuestion() {
-        QuestionContent questionContent = QuestionContent.provideFixedQuestionContent();
+        QuestionContent questionContent = QuestionContent.provideRandomFixedQuestionContent();
         Question question = Question.builder()
                 .questionContent(questionContent)
                 .build();
@@ -32,7 +32,7 @@ public class QuestionServiceImp implements QuestionService {
 
     @Override
     public Question createUnFixedQuestion() {
-        QuestionContent questionContent = QuestionContent.provideUnFixedQuestionContent();
+        QuestionContent questionContent = QuestionContent.provideRandomUnFixedQuestionContent();
         Question question = Question.builder()
                 .questionContent(questionContent)
                 .build();

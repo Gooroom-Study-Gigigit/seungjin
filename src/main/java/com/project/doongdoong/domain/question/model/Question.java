@@ -34,8 +34,12 @@ public class Question extends BaseEntity {
     private Answer answer;
 
     @Builder
-    public Question(QuestionContent questionContent) {
+    protected Question(QuestionContent questionContent) {
         this.questionContent = questionContent;
+    }
+
+    public static Question of(QuestionContent questionContent){
+        return new Question(questionContent );
     }
 
     public void connectAnalysis(Analysis analysis){

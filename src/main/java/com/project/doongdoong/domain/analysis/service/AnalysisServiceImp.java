@@ -9,7 +9,7 @@ import com.project.doongdoong.domain.analysis.repository.AnalysisRepository;
 import com.project.doongdoong.domain.answer.model.Answer;
 import com.project.doongdoong.domain.question.model.Question;
 import com.project.doongdoong.domain.question.model.QuestionContent;
-import com.project.doongdoong.domain.question.service.QuestionService;
+import com.project.doongdoong.domain.question.service.QuestionProvidable;
 import com.project.doongdoong.domain.user.exeception.UserNotFoundException;
 import com.project.doongdoong.domain.user.model.SocialType;
 import com.project.doongdoong.domain.user.model.User;
@@ -42,7 +42,7 @@ public class AnalysisServiceImp implements AnalysisService{
     private final VoiceRepository voiceRepository;
     private final UserRepository userRepository;
     private final AnalysisRepository analsisRepository;
-    private final QuestionService questionService;
+    private final QuestionProvidable questionProvidable;
     private final VoiceService voiceService;
     private final WebClientUtil webClientUtil;
     private final static long WEEK_TIME = 60 * 60 * 24 * 7;
@@ -58,7 +58,7 @@ public class AnalysisServiceImp implements AnalysisService{
         User user = userRepository.findBySocialTypeAndSocialId(SocialType.customValueOf(values[1]), values[0])
                 .orElseThrow(() -> new UserNotFoundException());
 
-        List<Question> questions = questionService.createQuestions(); // 질문 가져오기
+        List<Question> questions = questionProvidable.createRandomQuestions(); // 질문 가져오기
         Analysis analysis = Analysis.builder()
                 .user(user)
                 .questions(questions)

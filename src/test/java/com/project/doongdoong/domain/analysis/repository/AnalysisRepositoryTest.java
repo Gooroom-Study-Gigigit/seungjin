@@ -154,9 +154,7 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
     }
 
     private static Question createQuestion(QuestionContent questionContent) {
-        Question question = Question.builder()
-                .questionContent(questionContent)
-                .build();
+        Question question = Question.of(questionContent);
 
         return question;
     }

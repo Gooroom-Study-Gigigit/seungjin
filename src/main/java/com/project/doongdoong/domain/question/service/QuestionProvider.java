@@ -12,8 +12,7 @@ import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
-public class QuestionServiceImp implements QuestionService {
+public class QuestionProvider implements QuestionProvidable {
 
     private static final int FIXED_QUESTION_SIZE = 2;
     private static final int UNFIXED_QUESTION_SIZE = 2;
@@ -37,7 +36,7 @@ public class QuestionServiceImp implements QuestionService {
 
     @Transactional
     @Override
-    public List<Question> createQuestions() {
+    public List<Question> createRandomQuestions() {
         Questions fixedQuestions = getQuestions(QuestionContent.getFixedQuestionContents(), FIXED_QUESTION_SIZE);
         Questions unFixedQuestions = getQuestions(QuestionContent.getUnFixedQuestionContents(), UNFIXED_QUESTION_SIZE);
 

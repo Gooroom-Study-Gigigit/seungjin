@@ -33,8 +33,7 @@ public class Question extends BaseEntity {
     @JoinColumn(name = "answer_id")
     private Answer answer;
 
-    @Builder
-    protected Question(QuestionContent questionContent) {
+    private Question(QuestionContent questionContent) {
         this.questionContent = questionContent;
     }
 

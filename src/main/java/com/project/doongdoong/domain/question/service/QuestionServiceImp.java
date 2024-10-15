@@ -2,11 +2,12 @@ package com.project.doongdoong.domain.question.service;
 
 import com.project.doongdoong.domain.question.model.Question;
 import com.project.doongdoong.domain.question.model.QuestionContent;
+import com.project.doongdoong.domain.question.model.Questions;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,66 +19,44 @@ public class QuestionServiceImp implements QuestionService {
     private static final int UNFIXED_QUESTION_SIZE = 2;
 
 
-
     @Override
     public Question createFixedQuestion() {
-        QuestionContent questionContent = QuestionContent.provideRandomFixedQuestionContent();
-        Question question = Question.builder()
-                .questionContent(questionContent)
-                .build();
+        QuestionContent fixedQuestionContent = QuestionContent.provideRandomFixedQuestionContent();
 
-        return question;
+        return Question.of(fixedQuestionContent);
 
     }
 
     @Override
     public Question createUnFixedQuestion() {
-        QuestionContent questionContent = QuestionContent.provideRandomUnFixedQuestionContent();
-        Question question = Question.builder()
-                .questionContent(questionContent)
-                .build();
+        QuestionContent unQuestionContent = QuestionContent.provideRandomUnFixedQuestionContent();
 
-        return question;
-
+        return Question.of(unQuestionContent);
     }
+
 
     @Transactional
     @Override
     public List<Question> createQuestions() {
-        Set<Question> fixedQuestionList = getFixedQuestionList(FIXED_QUESTION_SIZE);
-        Set<Question> unFixedQuestionList = getUnFixedQuestionList(UNFIXED_QUESTION_SIZE);
+        Questions fixedQuestions = getQuestions(QuestionContent.getFixedQuestionContents(), FIXED_QUESTION_SIZE);
+        Questions unFixedQuestions = getQuestions(QuestionContent.getUnFixedQuestionContents(), UNFIXED_QUESTION_SIZE);
 
-        List<Question> mergedQuestionList = new ArrayList<>(fixedQuestionList);
-        mergedQuestionList.addAll(unFixedQuestionList);
-
-        return mergedQuestionList;
+        return fixedQuestions.sumQuestions(unFixedQuestions);
     }
 
-    private Set<Question> getFixedQuestionList(int size) {
-        Set<Question> questions = new HashSet<>();
-        while(questions.size() < FIXED_QUESTION_SIZE){
-            Question fixedQuestion = createFixedQuestion();
-            addIfNotDuplicateQuestionContent(questions, fixedQuestion);
-        }
-        return questions;
+    private Questions getQuestions(List<QuestionContent> questionContents, int size) {
+        List<Question> questionList = getQuestionListFrom(questionContents);
+
+        Questions questionsCandidate = Questions.of(questionList);
+
+        return questionsCandidate.extractRandomQuestions(size);
     }
 
-    private Set<Question> getUnFixedQuestionList(int size) {
-        Set<Question> questions = new HashSet<>();
-        while(questions.size() < UNFIXED_QUESTION_SIZE){
-            Question unFixedQuestion = createUnFixedQuestion();
-            addIfNotDuplicateQuestionContent(questions, unFixedQuestion);
-        }
-        return questions;
-    }
-
-    private void addIfNotDuplicateQuestionContent(Set<Question> questions, Question now) {
-        List<QuestionContent> questionContents = questions.stream()
-                .map(question -> question.getQuestionContent())
+    private List<Question> getQuestionListFrom(List<QuestionContent> questionContents) {
+        return questionContents.stream()
+                .map(questionContent -> Question.of(questionContent))
                 .collect(Collectors.toList());
-        if(!questionContents.contains(now.getQuestionContent())) {
-            questions.add(now);
-        }
     }
+
 
 }

@@ -34,19 +34,25 @@ public enum QuestionContent {
     );
     private static final Random random = new Random();
 
+    public static List<QuestionContent> getFixedQuestionContents() {
+        return FIXED_QUESTION_CONTENTS;
+    }
+
+    public static List<QuestionContent> getUnFixedQuestionContents() {
+        return UNFIXED_QUESTION_CONTENTS;
+    }
+
 
     public static QuestionContent provideRandomFixedQuestionContent() {
         return FIXED_QUESTION_CONTENTS.get(randomIndex(FIXED_QUESTION_CONTENTS.size()));
     }
-
-    private static int randomIndex(int size) {
-        return random.nextInt(size);
-    }
-
 
     public static QuestionContent provideRandomUnFixedQuestionContent() {
 
         return UNFIXED_QUESTION_CONTENTS.get(randomIndex(UNFIXED_QUESTION_CONTENTS.size()));
     }
 
+    private static int randomIndex(int size) {
+        return random.nextInt(size);
+    }
 }

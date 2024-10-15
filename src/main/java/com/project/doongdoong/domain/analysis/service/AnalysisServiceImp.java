@@ -41,7 +41,7 @@ public class AnalysisServiceImp implements AnalysisService{
 
     private final VoiceRepository voiceRepository;
     private final UserRepository userRepository;
-    private final AnalysisRepository analsisRepository;
+    private final AnalysisRepository analysisRepository;
     private final QuestionProvidable questionProvidable;
     private final VoiceService voiceService;
     private final WebClientUtil webClientUtil;
@@ -76,7 +76,7 @@ public class AnalysisServiceImp implements AnalysisService{
 
         } // ConcurrentModificationException 으로 인해 for문 사용
 
-        analsisRepository.save(analysis);
+        analysisRepository.save(analysis);
         List<Long> questionIds = analysis.getQuestions().stream().map(question -> question.getId())
                 .collect(Collectors.toList());
 
@@ -95,7 +95,7 @@ public class AnalysisServiceImp implements AnalysisService{
 
     @Override
     public AnalysisDetailResponse getAnalysis(Long analysisId) {
-        Analysis findAnalysis = analsisRepository.findById(analysisId).orElseThrow(() -> new AnalysisNotFoundException()); // fetch join으로 최적화 필요
+        Analysis findAnalysis = analysisRepository.findById(analysisId).orElseThrow(() -> new AnalysisNotFoundException()); // fetch join으로 최적화 필요
         List<Question> questions = findAnalysis.getQuestions();
         // questions에 해당하는 answers 가져오기
 
@@ -160,7 +160,7 @@ public class AnalysisServiceImp implements AnalysisService{
                 .orElseThrow(() -> new UserNotFoundException());
 
         PageRequest pageable = PageRequest.of(pageNumber, ANALYSIS_PAGE_SIZE);
-        Page<Analysis> analysisPages = analsisRepository.findAllByUserOrderByCreatedTime(user, pageable);
+        Page<Analysis> analysisPages = analysisRepository.findAllByUserOrderByCreatedTime(user, pageable);
 
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm");
 
@@ -187,14 +187,14 @@ public class AnalysisServiceImp implements AnalysisService{
         User user = userRepository.findBySocialTypeAndSocialId(SocialType.customValueOf(values[1]), values[0])
                 .orElseThrow(() -> new UserNotFoundException());
 
-        Optional<Analysis> analysis = analsisRepository.findFirstByUserOrderByAnalyzeTimeDesc(user);
+        Optional<Analysis> analysis = analysisRepository.findFirstByUserOrderByAnalyzeTimeDesc(user);
         List<FeelingStateResponseDto> result = null;
         if(analysis.isPresent())
         {
             Analysis findAnalysis = analysis.get();
             LocalDateTime endTime = findAnalysis.getCreatedTime().plusDays(1).truncatedTo(ChronoUnit.DAYS);
             LocalDateTime startTime = endTime.minusDays(6).truncatedTo(ChronoUnit.DAYS);
-            result = analsisRepository.findAllByDateBetween(user, startTime.toLocalDate(), endTime.toLocalDate());
+            result = analysisRepository.findAllByDateBetween(user, startTime.toLocalDate(), endTime.toLocalDate());
         }
 
         return FeelingStateResponseListDto.builder()
@@ -216,7 +216,7 @@ public class AnalysisServiceImp implements AnalysisService{
             user.growUp();
         }
 
-        Analysis findAnalysis = analsisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(() -> new AnalysisNotFoundException());
+        Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(() -> new AnalysisNotFoundException());
         List<Voice> voices = findAnalysis.getAnswers().stream() // 1. 분석에 대한 답변 매칭 파일 리스트 가져오기
                 .map(answer -> answer.getVoice())
                 .collect(Collectors.toList());
@@ -264,7 +264,7 @@ public class AnalysisServiceImp implements AnalysisService{
     @Override
     public void removeAnaylsis(Long analysisId) {
         // anlaysis와 관련된 answer의 voice에 해당하는 S3 파일 삭제 로직
-        Analysis findAnalysis = analsisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(() -> new AnalysisNotFoundException());
+        Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(() -> new AnalysisNotFoundException());
         List<String> accessUrls = findAnalysis.getAnswers().stream()
                 .map(answer -> answer.getVoice().getAccessUrl())
                 .collect(Collectors.toList());
@@ -274,7 +274,7 @@ public class AnalysisServiceImp implements AnalysisService{
             voiceService.deleteVoices(accessUrls); // voice를 참조하는 객체 없으므로 삭제 가능 -> 벌크 삭제로 쿼리 최적화 필요
         }
 
-        analsisRepository.deleteById(analysisId); // analysis 삭제로 question, answer 삭제 로직 -> voiceService.deleteVoices로 answer.voice와 관련 S3 파일은 이미 삭제.
+        analysisRepository.deleteById(analysisId); // analysis 삭제로 question, answer 삭제 로직 -> voiceService.deleteVoices로 answer.voice와 관련 S3 파일은 이미 삭제.
     }
 
 

@@ -482,11 +482,7 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
     }
 
     private static Question createQuestion(QuestionContent questionContent) {
-        Question question = Question.builder()
-                .questionContent(questionContent)
-                .build();
-
-        return question;
+        return Question.of(questionContent);
     }
 
     private static Analysis createAnalysis(User user, List<Question> questions) {

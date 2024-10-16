@@ -24,7 +24,7 @@ public class InitProvider {
 
     private final static String VOICE_QUESTION = "voice-question";
 
-    @PostConstruct
+    //@PostConstruct
     public void initQuestionVoiceFiles(){
 
         for (QuestionContent questionContent : QuestionContent.values()) {

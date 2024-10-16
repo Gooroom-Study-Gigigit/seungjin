@@ -6,7 +6,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.*;
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 @Service
@@ -18,27 +21,18 @@ public class QuestionServiceImp implements QuestionService {
     private static final int UNFIXED_QUESTION_SIZE = 2;
 
 
-
     @Override
     public Question createFixedQuestion() {
-        QuestionContent questionContent = QuestionContent.provideFixedQuestionContent();
-        Question question = Question.builder()
-                .questionContent(questionContent)
-                .build();
+        QuestionContent questionContent = QuestionContent.provideRandomFixedQuestionContent();
 
-        return question;
+        return Question.of(questionContent);
 
     }
 
     @Override
     public Question createUnFixedQuestion() {
-        QuestionContent questionContent = QuestionContent.provideUnFixedQuestionContent();
-        Question question = Question.builder()
-                .questionContent(questionContent)
-                .build();
-
-        return question;
-
+        QuestionContent questionContent = QuestionContent.provideRandomUnFixedQuestionContent();
+        return Question.of(questionContent);
     }
 
     @Transactional
@@ -55,7 +49,7 @@ public class QuestionServiceImp implements QuestionService {
 
     private Set<Question> getFixedQuestionList(int size) {
         Set<Question> questions = new HashSet<>();
-        while(questions.size() < FIXED_QUESTION_SIZE){
+        while (questions.size() < FIXED_QUESTION_SIZE) {
             Question fixedQuestion = createFixedQuestion();
             addIfNotDuplicateQuestionContent(questions, fixedQuestion);
         }
@@ -64,7 +58,7 @@ public class QuestionServiceImp implements QuestionService {
 
     private Set<Question> getUnFixedQuestionList(int size) {
         Set<Question> questions = new HashSet<>();
-        while(questions.size() < UNFIXED_QUESTION_SIZE){
+        while (questions.size() < UNFIXED_QUESTION_SIZE) {
             Question unFixedQuestion = createUnFixedQuestion();
             addIfNotDuplicateQuestionContent(questions, unFixedQuestion);
         }
@@ -75,7 +69,7 @@ public class QuestionServiceImp implements QuestionService {
         List<QuestionContent> questionContents = questions.stream()
                 .map(question -> question.getQuestionContent())
                 .collect(Collectors.toList());
-        if(!questionContents.contains(now.getQuestionContent())) {
+        if (!questionContents.contains(now.getQuestionContent())) {
             questions.add(now);
         }
     }

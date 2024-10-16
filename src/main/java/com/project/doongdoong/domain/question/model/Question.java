@@ -12,11 +12,13 @@ import lombok.NoArgsConstructor;
 import static jakarta.persistence.FetchType.LAZY;
 import static jakarta.persistence.GenerationType.IDENTITY;
 
-@Entity @Getter
+@Entity
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Question extends BaseEntity {
 
-    @Id @GeneratedValue(strategy = IDENTITY)
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
     @Column(name = "question_id")
     private Long id;
 
@@ -29,28 +31,26 @@ public class Question extends BaseEntity {
     @JoinColumn(name = "analysis_id")
     private Analysis analysis;
 
-    @OneToOne(fetch = LAZY, cascade = CascadeType.REMOVE,orphanRemoval = true)
+    @OneToOne(fetch = LAZY, cascade = CascadeType.REMOVE, orphanRemoval = true)
     @JoinColumn(name = "answer_id")
     private Answer answer;
 
-    @Builder
-    public Question(QuestionContent questionContent) {
+    private Question(QuestionContent questionContent) {
         this.questionContent = questionContent;
     }
 
-    public void connectAnalysis(Analysis analysis){
+    public static Question of(QuestionContent questionContent) {
+        return new Question(questionContent);
+    }
+
+    public void connectAnalysis(Analysis analysis) {
         this.analysis = analysis;
         //analysis.getQuestions().add(this); // 무한 참조(heap space)로 인해 주석 처리. 원인을 못 찾음...
     }
 
-    public void connectAnswer(Answer answer){
+    public void connectAnswer(Answer answer) {
         this.answer = answer;
     }
-
-
-
-
-
 
 
 }

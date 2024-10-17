@@ -47,9 +47,14 @@ dependencies {
 	implementation("org.springframework.cloud:spring-cloud-starter-aws:2.2.6.RELEASE") // amazon cloud 사용
 	implementation ("org.springframework.boot:spring-boot-starter-webflux") // webflux, 모바일 사용
 
+
+    implementation("io.netty:netty-resolver-dns-native-macos:4.1.96.Final:osx-aarch_64")
+//	implementation('io.netty:netty-resolver-dns-native-macos')
+
 	// 스프링 부트 3.0 이상 query dls
 	implementation("com.querydsl:querydsl-jpa:5.0.0:jakarta")
 	annotationProcessor("com.querydsl:querydsl-apt:5.0.0:jakarta")
+
 
 	annotationProcessor("jakarta.persistence:jakarta.persistence-api")
 	annotationProcessor("jakarta.annotation:jakarta.annotation-api")
@@ -63,6 +68,12 @@ dependencies {
 	testImplementation("org.springframework.boot:spring-boot-starter-test")
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation ("com.h2database:h2")
+
+	//testImplementation(
+     //       group = "io.netty",
+      //      name = "netty-resolver-dns-native-macos",
+       //     classifier = "osx-aarch_64"
+        //)
 }
 
 tasks.withType<Test> {
@@ -85,7 +96,6 @@ tasks.withType<JavaCompile> {
 	// 위의 설정이 안되면 아래 설정 사용
 	// options.generatedSourceOutputDirectory.set(file(querydslDir))
 }
-
 tasks.named("clean") {
 	doLast {
 		file(querydslDir).deleteRecursively()

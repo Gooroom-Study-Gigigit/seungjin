@@ -11,7 +11,7 @@ public class Questions {
         this.questions = questions;
     }
 
-    public static Questions of(List<Question> questions){
+    public static Questions from(List<Question> questions){
         return new Questions(questions);
     }
 
@@ -21,7 +21,7 @@ public class Questions {
         Collections.shuffle(questionList);
         List<Question> randomQuestions = questionList.subList(0, size);
 
-        return of(randomQuestions);
+        return from(randomQuestions);
     }
 
     public List<Question> addQuestions(Questions newQuestions) {

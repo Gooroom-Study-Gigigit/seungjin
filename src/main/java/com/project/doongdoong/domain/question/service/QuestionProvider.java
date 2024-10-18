@@ -44,7 +44,7 @@ public class QuestionProvider implements QuestionProvidable {
     private Questions getQuestions(List<QuestionContent> questionContents, int size) {
         List<Question> questionList = getQuestionListFrom(questionContents);
 
-        Questions questionsCandidate = Questions.of(questionList);
+        Questions questionsCandidate = Questions.from(questionList);
 
         return questionsCandidate.extractRandomQuestions(size);
     }

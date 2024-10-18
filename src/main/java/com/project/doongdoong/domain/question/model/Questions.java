@@ -24,9 +24,9 @@ public class Questions {
         return of(randomQuestions);
     }
 
-    public List<Question> sumQuestions(Questions unFixedQuestions) {
+    public List<Question> addQuestions(Questions newQuestions) {
         ArrayList<Question> mergedQuestions = new ArrayList<>(questions);
-        mergedQuestions.addAll(unFixedQuestions.questions);
+        mergedQuestions.addAll(newQuestions.questions);
 
         return mergedQuestions;
     }

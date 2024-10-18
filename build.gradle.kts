@@ -69,11 +69,6 @@ dependencies {
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation ("com.h2database:h2")
 
-	//testImplementation(
-     //       group = "io.netty",
-      //      name = "netty-resolver-dns-native-macos",
-       //     classifier = "osx-aarch_64"
-        //)
 }
 
 tasks.withType<Test> {

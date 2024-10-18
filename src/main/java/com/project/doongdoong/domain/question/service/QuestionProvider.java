@@ -38,7 +38,7 @@ public class QuestionProvider implements QuestionProvidable {
         Questions fixedQuestions = getQuestions(QuestionContent.getFixedQuestionContents(), FIXED_QUESTION_SIZE);
         Questions unFixedQuestions = getQuestions(QuestionContent.getUnFixedQuestionContents(), UNFIXED_QUESTION_SIZE);
 
-        return fixedQuestions.sumQuestions(unFixedQuestions);
+        return fixedQuestions.addQuestions(unFixedQuestions);
     }
 
     private Questions getQuestions(List<QuestionContent> questionContents, int size) {

@@ -2,6 +2,7 @@ plugins {
 	java
 	id("org.springframework.boot") version "3.2.1"
 	id("io.spring.dependency-management") version "1.1.4"
+	id("org.asciidoctor.jvm.convert") version "3.3.2"
 }
 
 group = "com.project"
@@ -15,6 +16,7 @@ configurations {
 	compileOnly {
 		extendsFrom(configurations.annotationProcessor.get())
 	}
+	create("asciidoctorExt")
 }
 
 repositories {
@@ -69,6 +71,10 @@ dependencies {
 	testImplementation("org.springframework.security:spring-security-test")
 	testImplementation ("com.h2database:h2")
 
+	// Spring REST Docs
+	add("asciidoctorExt", "org.springframework.restdocs:spring-restdocs-asciidoctor") // asciidoctorExt("org.springframework.restdocs:spring-restdocs-asciidoctor")
+    testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
+
 }
 
 tasks.withType<Test> {
@@ -96,3 +102,32 @@ tasks.named("clean") {
 		file(querydslDir).deleteRecursively()
 	}
 }
+
+// RestDocs 설정
+val snippetsDir by extra { file("build/generated-snippets") }
+
+tasks.test {
+    useJUnitPlatform()
+    outputs.dir(snippetsDir) // 테스트 결과를 Snippets 디렉터리에 저장
+}
+
+tasks.named<org.asciidoctor.gradle.jvm.AsciidoctorTask>("asciidoctor") {
+    inputs.dir(snippetsDir) // 테스트 결과 스니펫을 입력으로 사용
+    configurations("asciidoctorExt") // 추가적인 의존성 설정
+
+    sources {
+        include("**/index.adoc") // 특정 AsciiDoc 파일만 포함
+    }
+    baseDirFollowsSourceFile() // 상대 경로가 제대로 처리되도록 설정
+    dependsOn(tasks.test) // Asciidoctor 작업이 테스트 이후 실행되도록 설정
+}
+
+// BootJar 작업 설정 - Asciidoctor의 출력을 포함합니다.
+tasks.named<org.springframework.boot.gradle.tasks.bundling.BootJar>("bootJar") {
+    dependsOn(tasks.named("asciidoctor")) // BootJar는 Asciidoctor 작업 이후 실행됨
+
+    from(tasks.named<org.asciidoctor.gradle.jvm.AsciidoctorTask>("asciidoctor").get().outputDir) {
+        into("static/docs") // 생성된 문서를 static/docs로 복사
+    }
+}
+

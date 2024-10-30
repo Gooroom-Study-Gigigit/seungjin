@@ -2,6 +2,7 @@ package com.project.doongdoong.global.util;
 
 import com.google.cloud.texttospeech.v1.*;
 import com.project.doongdoong.global.exception.GoogleTtsException;
+import lombok.Value;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -26,6 +27,7 @@ public class GoogleTtsProvider {
             SynthesizeSpeechResponse response = textToSpeechClient.synthesizeSpeech(input, voice, audioConfig); // TTS API 결과로 전달받은 reponse
             audioContent = response.getAudioContent().toByteArray(); // 바이트로 변환
         } catch (IOException e) {
+            log.info("tts 호출 에러 = {}", e.getMessage());
             throw new GoogleTtsException();
         }
         return audioContent;

@@ -22,7 +22,7 @@ public class AnalysisController {
     private final AnswerService answerService;
 
     @PostMapping
-    public ApiResponse<AnalysisCreateResponseDto> createAnaysis(@CurrentUser String uniqueValue){
+    public ApiResponse<AnalysisCreateResponseDto> createAnalysis(@CurrentUser String uniqueValue){
 
         return ApiResponse.of(HttpStatus.OK, null, analysisService.createAnalysis(uniqueValue));
     }

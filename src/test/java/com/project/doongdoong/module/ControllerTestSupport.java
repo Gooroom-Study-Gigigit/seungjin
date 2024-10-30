@@ -12,16 +12,16 @@ import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-@WebMvcTest(controllers = {CounselController.class, AnalysisController.class} /* 추가로 필요한 컨트롤러 클래스 지정 */)
-public abstract class ControllerTestSupport {
-    @Autowired
-    protected MockMvc mockMvc;
-    @MockBean
-    protected CounselService counselService;
-    @MockBean
-    protected AnalysisService analysisService;
-    @MockBean
-    protected AnswerService answerService;
-    @Autowired
-    protected ObjectMapper objectMapper;
-}
+    @WebMvcTest(controllers = {CounselController.class, AnalysisController.class} /* 추가로 필요한 컨트롤러 클래스 지정 */)
+    public abstract class ControllerTestSupport {
+        @Autowired
+        protected MockMvc mockMvc;
+        @MockBean
+        protected CounselService counselService;
+        @MockBean
+        protected AnalysisService analysisService;
+        @MockBean
+        protected AnswerService answerService;
+        @Autowired
+        protected ObjectMapper objectMapper;
+    }

@@ -20,7 +20,7 @@
         private final JwtProvider jwtProvider;
         public final static String[] ALLOW_REQUEST = {
                 "/", "/api/v1/user/ping", "/api/v1/user/login-oauth", "/api/v1/user/reissue",
-                "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**"
+                "/api-docs/**", "/swagger-ui/**", "/swagger-ui.html", "/actuator/**", "/docs/index.html"
         };
         @Bean
         public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {

@@ -93,6 +93,7 @@ sourceSets {
 
 tasks.withType<JavaCompile> {
 	options.generatedSourceOutputDirectory = file(querydslDir)
+    options.compilerArgs.add("-parameters")
 
 	// 위의 설정이 안되면 아래 설정 사용
 	// options.generatedSourceOutputDirectory.set(file(querydslDir))

@@ -25,7 +25,7 @@ public class AnalysisControllerTest extends ControllerTestSupport {
     @Test
     @DisplayName("분석을 위한 감정 분석 설문지를 생성한다.")
     @WithMockUser(username = "APPLE_whffkaos007@naver.com")
-    void createAnaysis() throws Exception {
+    void createAnalysis() throws Exception {
         //given
         String uniqueValue = "APPLE_whffkaos007@naver.com";
 

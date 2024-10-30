@@ -1,0 +1,12 @@
+
+[[analysis-create]]
+=== 분석 설문지 생성
+
+=== HTTP Request
+include::{snippets}/analysis-create/http-request.adoc[]
+include::{snippets}/analysis-create/request-headers.adoc[]
+
+
+=== HTTP Response
+include::{snippets}/analysis-create/http-response.adoc[]
+include::{snippets}/analysis-create/response-fields.adoc[]

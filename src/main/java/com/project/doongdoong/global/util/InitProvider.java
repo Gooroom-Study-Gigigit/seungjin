@@ -4,13 +4,15 @@ import com.project.doongdoong.domain.question.model.QuestionContent;
 import com.project.doongdoong.domain.voice.model.Voice;
 import com.project.doongdoong.domain.voice.repository.VoiceRepository;
 import com.project.doongdoong.domain.voice.service.VoiceService;
+import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Profile;
+import org.springframework.stereotype.Component;
 
 import java.util.Optional;
 
-// @Component // 결제 문제로 일단 사용 X
+@Component // 결제 문제로 일단 사용 X
 @Slf4j
 @RequiredArgsConstructor
 @Profile("!test")
@@ -22,7 +24,7 @@ public class InitProvider {
 
     private final static String VOICE_QUESTION = "voice-question";
 
-    //@PostConstruct
+    @PostConstruct
     public void initQuestionVoiceFiles(){
 
         for (QuestionContent questionContent : QuestionContent.values()) {

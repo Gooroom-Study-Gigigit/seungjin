@@ -24,23 +24,26 @@ import java.util.Optional;
 
 @Service @Slf4j
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class AnswerServiceImp implements AnswerService{
 
     private final VoiceRepository voiceRepository;
     private final VoiceService voiceService;
     private final AnswerRepository answerRepository;
     private final AnalysisRepository analysisRepository;
+
     public final static int MAX_ANSWER_COUNT = 4;
 
 
     @Transactional
     @Override
     public AnswerCreateResponseDto createAnswer(Long analysisId, MultipartFile file, Long questionId) {
-        Analysis findAnaylsis = analysisRepository.findAnalysisWithQuestion(analysisId).orElseThrow(() -> new AnalysisNotFoundException());
+        Analysis findAnalysis = analysisRepository.findAnalysisWithQuestion(analysisId)
+                .orElseThrow(AnalysisNotFoundException::new);
 
-        Question matchedQuestion = findAnaylsis.getQuestions().stream()
+        Question matchedQuestion = findAnalysis.getQuestions().stream()
                 .filter(question -> (long)question.getId() == (long)questionId)
-                .findFirst().orElseThrow(() -> new NoMatchingQuestionException());
+                .findFirst().orElseThrow(NoMatchingQuestionException::new);
 
         if(Optional.ofNullable(matchedQuestion.getAnswer()).isPresent()){ // 이미 설정된 question - answer이 존재할 때 다시 접근하려고 하면 예외 발생
             throw new AnswerConflictException();
@@ -54,7 +57,7 @@ public class AnswerServiceImp implements AnswerService{
                 .voice(voice)
                 .build();
 
-        answer.connectAnalysis(findAnaylsis);
+        answer.connectAnalysis(findAnalysis);
         matchedQuestion.connectAnswer(answer);
         answerRepository.save(answer);
 

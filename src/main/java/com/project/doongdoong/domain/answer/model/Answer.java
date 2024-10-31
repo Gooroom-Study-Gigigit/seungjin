@@ -38,8 +38,9 @@ public class Answer extends BaseEntity {
     }
 
     public void connectAnalysis(Analysis analysis){
-        if(this.analysis != null)
+        if(this.analysis != null) {
             return;
+        }
         this.analysis = analysis;
         analysis.getAnswers().add(this);
     }

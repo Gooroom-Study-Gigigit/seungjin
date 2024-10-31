@@ -245,7 +245,7 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
                 .extracting("pageNumber", "totalPage")
                 .containsExactly(1, 1);
 
-        assertThat(response.getAnaylsisResponseDtoList())
+        assertThat(response.getAnalysisResponseDtoList())
                 .hasSize(analysies.size())
                 .extracting("analysisId", "questionContent")
                 .containsExactlyInAnyOrder(

@@ -16,8 +16,58 @@ include::{snippets}/analysis-create/response-fields.adoc[]
 
 ==== HTTP Request
 include::{snippets}/analysis-find/http-request.adoc[]
+include::{snippets}/analysis-find/request-headers.adoc[]
 include::{snippets}/analysis-find/path-parameters.adoc[]
 
 ==== HTTP Response
 include::{snippets}/analysis-find/http-response.adoc[]
 include::{snippets}/analysis-find/response-fields.adoc[]
+
+
+[[analysis-paging-find]]
+=== 분석 설문지 페이징 조회
+
+==== HTTP Request
+include::{snippets}/analysis-paging-find/http-request.adoc[]
+include::{snippets}/analysis-paging-find/request-headers.adoc
+include::{snippets}/analysis-paging-find/query-parameters.adoc[]
+
+==== HTTP Response
+include::{snippets}/analysis-paging-find/http-response.adoc[]
+include::{snippets}/analysis-paging-find/response-fields.adoc[]
+
+
+[[analysis-find-my-week]]
+=== 분석 설문지 당일 기준 일주일 조회
+
+==== HTTP Request
+include::{snippets}/analysis-find-my-week/http-request.adoc[]
+include::{snippets}/analysis-find-my-week/request-headers.adoc[]
+
+==== HTTP Response
+include::{snippets}/analysis-find-my-week/http-response.adoc[]
+include::{snippets}/analysis-find-my-week/response-fields.adoc[]
+
+
+[[analysis-analyze-emotion]]
+=== 분석 설문지에 감정 분석
+
+==== HTTP Request
+include::{snippets}/analysis-analyze-emotion/http-request.adoc[]
+include::{snippets}/analysis-analyze-emotion/request-headers.adoc[]
+
+==== HTTP Response
+include::{snippets}/analysis-analyze-emotion/http-response.adoc[]
+include::{snippets}/analysis-analyze-emotion/response-fields.adoc[]
+
+
+[[analysis-save-answer]]
+=== 분석 질문지에 대한 답변 저장
+
+==== HTTP Request
+include::{snippets}/analysis-save-answer/http-request.adoc[]
+include::{snippets}/analysis-save-answer/request-headers.adoc[]
+
+==== HTTP Response
+include::{snippets}/analysis-save-answer/http-response.adoc[]
+include::{snippets}/analysis-save-answer/response-fields.adoc[]

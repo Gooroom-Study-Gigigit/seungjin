@@ -115,7 +115,7 @@ public class AnalysisControllerTest extends ControllerTestSupport {
         AnaylsisListResponseDto result = AnaylsisListResponseDto.builder()
                 .pageNumber(1)
                 .totalPage(1)
-                .anaylsisResponseDtoList(List.of(detailResult))
+                .analysisResponseDtoList(List.of(detailResult))
                 .build();
 
         when(analysisService.getAnalysisList(anyString(), anyInt()))
@@ -129,7 +129,7 @@ public class AnalysisControllerTest extends ControllerTestSupport {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data.pageNumber").value(result.getPageNumber()))
                 .andExpect(jsonPath("$.data.totalPage").value(result.getTotalPage()))
-                .andExpect(jsonPath("$.data.anaylsisResponseDtoList").isArray());
+                .andExpect(jsonPath("$.data.analysisResponseDtoList").isArray());
     }
 
     @Test

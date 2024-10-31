@@ -14,6 +14,6 @@ import java.util.List;
 public class AnaylsisListResponseDto {
     private int pageNumber;
     private int totalPage;
-    private List<AnaylsisResponseDto> anaylsisResponseDtoList;
+    private List<AnaylsisResponseDto> analysisResponseDtoList;
 
 }

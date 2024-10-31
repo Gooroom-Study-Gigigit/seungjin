@@ -169,7 +169,7 @@ public class AnalysisServiceImp implements AnalysisService{
         return AnaylsisListResponseDto.builder()
                 .pageNumber(analysisPages.getNumber() + 1)
                 .totalPage(analysisPages.getTotalPages())
-                .anaylsisResponseDtoList(analysisPages.getContent().stream()
+                .analysisResponseDtoList(analysisPages.getContent().stream()
                         .map(analysis -> AnaylsisResponseDto.builder()
                                 .analysisId(analysis.getId())
                                 .time(analysis.getCreatedTime().format(formatter))

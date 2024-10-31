@@ -14,16 +14,11 @@ import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockMultipartFile;
 import org.springframework.restdocs.mockmvc.RestDocumentationRequestBuilders;
 import org.springframework.restdocs.payload.JsonFieldType;
-import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 import java.util.List;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.*;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.when;
 import static org.springframework.restdocs.headers.HeaderDocumentation.headerWithName;
 import static org.springframework.restdocs.headers.HeaderDocumentation.requestHeaders;
@@ -31,11 +26,8 @@ import static org.springframework.restdocs.mockmvc.MockMvcRestDocumentation.docu
 import static org.springframework.restdocs.operation.preprocess.Preprocessors.*;
 import static org.springframework.restdocs.payload.PayloadDocumentation.fieldWithPath;
 import static org.springframework.restdocs.payload.PayloadDocumentation.responseFields;
-import static org.springframework.restdocs.request.RequestDocumentation.parameterWithName;
-import static org.springframework.restdocs.request.RequestDocumentation.pathParameters;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.restdocs.request.RequestDocumentation.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 public class AnalysisControllerDocsTest extends RestDocsSupport {
@@ -168,10 +160,9 @@ public class AnalysisControllerDocsTest extends RestDocsSupport {
                                 )
                 );
     }
-/*
+
     @Test
     @DisplayName("본인의 분석 결과들을 페이징 조회한다.")
-    @WithMockUser(username = "APPLE_whffkaos007@naver.com")
     void getAnalysisList() throws Exception {
         //given
         AnaylsisResponseDto detailResult = AnaylsisResponseDto.builder()
@@ -184,26 +175,63 @@ public class AnalysisControllerDocsTest extends RestDocsSupport {
         AnaylsisListResponseDto result = AnaylsisListResponseDto.builder()
                 .pageNumber(1)
                 .totalPage(1)
-                .anaylsisResponseDtoList(List.of(detailResult))
+                .analysisResponseDtoList(List.of(detailResult))
                 .build();
 
-        when(analysisService.getAnalysisList(anyString(), anyInt()))
+        when(analysisService.getAnalysisList(any(), anyInt()))
                 .thenReturn(result);
         // when, then
         mockMvc.perform(MockMvcRequestBuilders.get("/api/v1/analysis")
-                        .with(csrf())
+                        //.with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
+                        .header("Authorization", "Bearer AAAAA.BBBBBBB.CCCCCC")
                         .param("pageNumber", "1")
                 ).andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.pageNumber").value(result.getPageNumber()))
-                .andExpect(jsonPath("$.data.totalPage").value(result.getTotalPage()))
-                .andExpect(jsonPath("$.data.anaylsisResponseDtoList").isArray());
+                .andDo(document("analysis-paging-find",
+                                preprocessRequest(prettyPrint()),
+                                preprocessResponse(prettyPrint()),
+                                requestHeaders(
+                                        headerWithName("Authorization")
+                                                .description("Bearer Token 을 통한 인증"),
+                                        headerWithName("Content-Type")
+                                                .description("요청 컨텐트 타입")
+                                ),
+                                queryParameters(
+                                        parameterWithName("pageNumber").optional()
+                                                .description("조회할 페이지 번호(Optional, 기본값 : 1")
+                                ),
+                                responseFields(
+                                        fieldWithPath("code").type(JsonFieldType.NUMBER)
+                                                .description("코드"),
+                                        fieldWithPath("state").type(JsonFieldType.STRING)
+                                                .description("상태"),
+                                        fieldWithPath("message").type(JsonFieldType.NULL)
+                                                .description("메세지"),
+                                        fieldWithPath("data").type(JsonFieldType.OBJECT)
+                                                .description("응답 데이터"),
+                                        fieldWithPath("data.pageNumber").type(JsonFieldType.NUMBER)
+                                                .description("페이지 번호"),
+                                        fieldWithPath("data.totalPage").type(JsonFieldType.NUMBER)
+                                                .description("페이지 개수"),
+                                        fieldWithPath("data.analysisResponseDtoList").type(JsonFieldType.ARRAY)
+                                                .description("조회한 분석 목록"),
+                                        fieldWithPath("data.analysisResponseDtoList[].analysisId").type(JsonFieldType.NUMBER)
+                                                .description("분석 리소스 ID"),
+                                        fieldWithPath("data.analysisResponseDtoList[].time").type(JsonFieldType.STRING)
+                                                .description("분석 시간"),
+                                        fieldWithPath("data.analysisResponseDtoList[].feelingState").type(JsonFieldType.NUMBER)
+                                                .description("분석 결과 점수"),
+                                        fieldWithPath("data.analysisResponseDtoList[].questionContent").type(JsonFieldType.ARRAY)
+                                                .description("분석 질문에 대한 답변 내용 목록")
+                                )
+                        )
+                );
     }
+
 
     @Test
     @DisplayName("최근 마지막 분석 일을 기준으로 일주일 간 감정 수치 정보를 가져온다.")
-    @WithMockUser
     void getAnalysesGroupByDay() throws Exception {
         //given
         String exampleDate = "yyyy:MM:dd hh:mm";
@@ -215,29 +243,54 @@ public class AnalysisControllerDocsTest extends RestDocsSupport {
                 )
                 .build();
 
-        when(analysisService.getAnalysisListGroupByDay(anyString()))
+        when(analysisService.getAnalysisListGroupByDay(any()))
                 .thenReturn(result);
 
         //when, then
         mockMvc.perform(
                         MockMvcRequestBuilders.get("/api/v1/analysis/week")
                                 .contentType(MediaType.APPLICATION_JSON)
+                                .header("Authorization", "Bearer AAAAA.BBBBBBB.CCCCCC")
                 ).andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.feelingStateResponsesDto").isArray());
+                .andDo(document("analysis-find-my-week",
+                                preprocessRequest(prettyPrint()),
+                                preprocessResponse(prettyPrint()),
+                                requestHeaders(
+                                        headerWithName("Authorization")
+                                                .description("Bearer Token 을 통한 인증"),
+                                        headerWithName("Content-Type")
+                                                .description("요청 컨텐트 타입")
+                                ),
+                                responseFields(
+                                        fieldWithPath("code").type(JsonFieldType.NUMBER)
+                                                .description("코드"),
+                                        fieldWithPath("state").type(JsonFieldType.STRING)
+                                                .description("상태"),
+                                        fieldWithPath("message").type(JsonFieldType.NULL)
+                                                .description("메세지"),
+                                        fieldWithPath("data").type(JsonFieldType.OBJECT)
+                                                .description("응답 데이터"),
+                                        fieldWithPath("data.feelingStateResponsesDto").type(JsonFieldType.ARRAY)
+                                                .description("조회한 분석 목록"),
+                                        fieldWithPath("data.feelingStateResponsesDto[].date").type(JsonFieldType.STRING)
+                                                .description("분석 날짜"),
+                                        fieldWithPath("data.feelingStateResponsesDto[].avgFeelingState").type(JsonFieldType.NUMBER)
+                                                .description("하루 분석 평균 점수")
+                                )
+                        )
+                );
+
 
     }
-
     private static FeelingStateResponseDto ofFellingStateResponseDto(String exampleDate, double stateScore) {
         return FeelingStateResponseDto.builder()
                 .date(exampleDate)
                 .avgFeelingState(stateScore)
                 .build();
     }
-
     @Test
     @DisplayName("각 질문에 대한 답볍인 음성 파일과 음성 파일 기반 텍스트를 통해 사용자의 감정 상태를 수치로 나타냅니다.")
-    @WithMockUser
     void analyzeEmotion() throws Exception {
         //given
         double exampleScore = 45.5;
@@ -246,20 +299,47 @@ public class AnalysisControllerDocsTest extends RestDocsSupport {
                 .feelingState(exampleScore)
                 .build();
 
-        when(analysisService.analyzeEmotion(anyLong(), anyString()))
+        when(analysisService.analyzeEmotion(anyLong(), any()))
                 .thenReturn(result);
         //when, then
         mockMvc.perform(
-                        MockMvcRequestBuilders.post("/api/v1/analysis/{id}", exampleId)
-                                .with(csrf())
+                        RestDocumentationRequestBuilders.post("/api/v1/analysis/{id}", exampleId)
                                 .contentType(MediaType.APPLICATION_JSON)
+                                .header("Authorization", "Bearer AAAAA.BBBBBBB.CCCCCC")
                 ).andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.feelingState").value(result.getFeelingState()));
+                .andDo(document("analysis-analyze-emotion",
+                                preprocessRequest(prettyPrint()),
+                                preprocessResponse(prettyPrint()),
+                                requestHeaders(
+                                        headerWithName("Authorization")
+                                                .description("Bearer Token 을 통한 인증"),
+                                        headerWithName("Content-Type")
+                                                .description("요청 컨텐트 타입")
+                                ),
+                                pathParameters(
+                                        parameterWithName("id")
+                                                .description("분석 리소스의 ID")
+                                ),
+                                responseFields(
+                                        fieldWithPath("code").type(JsonFieldType.NUMBER)
+                                                .description("코드"),
+                                        fieldWithPath("state").type(JsonFieldType.STRING)
+                                                .description("상태"),
+                                        fieldWithPath("message").type(JsonFieldType.NULL)
+                                                .description("메세지"),
+                                        fieldWithPath("data").type(JsonFieldType.OBJECT)
+                                                .description("응답 데이터"),
+                                        fieldWithPath("data.transcribedText").type(JsonFieldType.NULL)
+                                                .description("기존 답변에 대한 텍스트(이미 있으므로 null 반환, 추후 개선)"),
+                                        fieldWithPath("data.feelingState").type(JsonFieldType.NUMBER)
+                                                .description("감정 분석된 결과 점수")
+                                )
+                        )
+                );
     }
     @Test
     @DisplayName("분석을 위해 제공한 질문들 중 하나의 질문에 대한 음성 파일인 답변을 저장한다.")
-    @WithMockUser
     void createAnswer() throws Exception {
         //given
         Long exampleAnalysisId = 1L;
@@ -280,63 +360,79 @@ public class AnalysisControllerDocsTest extends RestDocsSupport {
 
         //when, then
         mockMvc.perform(
-                        MockMvcRequestBuilders.multipart("/api/v1/analysis/{id}/answer", exampleAnalysisId)
+                        RestDocumentationRequestBuilders.multipart("/api/v1/analysis/{id}/answer", exampleAnalysisId)
                                 .file(exampleAudioFile)
                                 .contentType(MediaType.MULTIPART_FORM_DATA)
+                                .header("Authorization", "Bearer AAAAA.BBBBBBB.CCCCCC")
                                 .param("questionId", String.valueOf(exampleAnswerId))
-                                .with(csrf())
                 ).andDo(print())
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data.answerId").value(result.getAnswerId()));
-
-    }
-
-    @Test
-    @DisplayName("분석을 위해 제공한 질문들 중 하나의 질문에 대한 음성 파일이 비어있거나 없다면 저장하지 않습니다.")
-    @WithMockUser
-    void createAnswerException() throws Exception {
-        //given
-        Long exampleAnalysisId = 1L;
-        Long exampleAnswerId = 1L;
-        AnswerCreateResponseDto result = AnswerCreateResponseDto.builder()
-                .answerId(exampleAnswerId)
-                .build();
-
-        MockMultipartFile exampleAudioFile = new MockMultipartFile(
-                "file",
-                "testAudio.mp3",
-                MediaType.MULTIPART_FORM_DATA_VALUE,
-                new byte[0]
-        );
-
-
-        //when, then
-        mockMvc.perform(
-                        MockMvcRequestBuilders.multipart("/api/v1/analysis/{id}/answer", exampleAnalysisId)
-                                .file(exampleAudioFile)
-                                .contentType(MediaType.MULTIPART_FORM_DATA)
-                                .param("questionId", String.valueOf(exampleAnswerId))
-                                .with(csrf())
-                ).andDo(print())
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.errorCode").value(1))
-                .andExpect(jsonPath("$.message").value("파일 자료가 하나도 없습니다."));
+                .andDo(document("analysis-save-answer",
+                                preprocessRequest(prettyPrint()),
+                                preprocessResponse(prettyPrint()),
+                                requestHeaders(
+                                        headerWithName("Authorization")
+                                                .description("Bearer Token 을 통한 인증"),
+                                        headerWithName("Content-Type")
+                                                .description("요청 컨텐트 타입")
+                                ),
+                                pathParameters(
+                                        parameterWithName("id")
+                                                .description("조회할 분석 리소스의 ID")
+                                ),
+                                responseFields(
+                                        fieldWithPath("code").type(JsonFieldType.NUMBER)
+                                                .description("코드"),
+                                        fieldWithPath("state").type(JsonFieldType.STRING)
+                                                .description("상태"),
+                                        fieldWithPath("message").type(JsonFieldType.NULL)
+                                                .description("메세지"),
+                                        fieldWithPath("data").type(JsonFieldType.OBJECT)
+                                                .description("응답 데이터"),
+                                        fieldWithPath("data.answerId").type(JsonFieldType.NUMBER)
+                                                .description("답변 리소스 ID")
+                                )
+                        )
+                );
 
     }
 
     @Test
     @DisplayName("해당하는 분석 관련 정보를 삭제한다.")
-    @WithMockUser
     void deleteAnalysis() throws Exception {
         //given, when, then
         mockMvc.perform(
-                        MockMvcRequestBuilders.delete("/api/v1/analysis/{id}", anyLong())
+                        RestDocumentationRequestBuilders.delete("/api/v1/analysis/{id}", anyLong())
                                 .contentType(MediaType.APPLICATION_JSON)
-                                .with(csrf())
+                                .header("Authorization", "Bearer AAAAA.BBBBBBB.CCCCCC")
                 ).andDo(print())
                 .andExpect(status().isNoContent())
-                .andExpect(jsonPath("$.data").isEmpty());
-    }*/
+                .andDo(document("analysis-save-answer",
+                                preprocessRequest(prettyPrint()),
+                                preprocessResponse(prettyPrint()),
+                                requestHeaders(
+                                        headerWithName("Authorization")
+                                                .description("Bearer Token 을 통한 인증"),
+                                        headerWithName("Content-Type")
+                                                .description("요청 컨텐트 타입")
+                                ),
+                                pathParameters(
+                                        parameterWithName("id")
+                                                .description("조회할 분석 리소스의 ID")
+                                ),
+                                responseFields(
+                                        fieldWithPath("code").type(JsonFieldType.NUMBER)
+                                                .description("코드"),
+                                        fieldWithPath("state").type(JsonFieldType.STRING)
+                                                .description("상태"),
+                                        fieldWithPath("message").type(JsonFieldType.NULL)
+                                                .description("메세지"),
+                                        fieldWithPath("data").type(JsonFieldType.NULL)
+                                                .description("응답 데이터")
+                                )
+                        )
+                );
+    }
 }
 
 

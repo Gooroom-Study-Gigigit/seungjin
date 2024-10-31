@@ -3,6 +3,8 @@ package com.project.doongdoong.domain.answer.service;
 import com.project.doongdoong.domain.analysis.model.Analysis;
 import com.project.doongdoong.domain.analysis.repository.AnalysisRepository;
 import com.project.doongdoong.domain.answer.dto.AnswerCreateResponseDto;
+import com.project.doongdoong.domain.answer.exception.AnswerConflictException;
+import com.project.doongdoong.domain.answer.model.Answer;
 import com.project.doongdoong.domain.question.model.Question;
 import com.project.doongdoong.domain.question.model.QuestionContent;
 import com.project.doongdoong.domain.user.model.SocialType;
@@ -24,6 +26,7 @@ import java.nio.file.Files;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class AnswerServiceImpTest extends IntegrationSupportTest {
 
@@ -33,6 +36,7 @@ class AnswerServiceImpTest extends IntegrationSupportTest {
     AnalysisRepository analysisRepository;
     @Autowired
     UserRepository userRepository;
+
 
     File tempFile;
 
@@ -57,7 +61,7 @@ class AnswerServiceImpTest extends IntegrationSupportTest {
     @Test
     void createAnswer() throws IOException {
         // given
-        User user = createUser("socialId", SocialType.APPLE);
+        User user = createUser();
         userRepository.save(user);
 
         Question question1 = createQuestion(QuestionContent.FIXED_QUESTION1);
@@ -71,7 +75,10 @@ class AnswerServiceImpTest extends IntegrationSupportTest {
         question2.connectAnalysis(analysis);
         question3.connectAnalysis(analysis);
         question4.connectAnalysis(analysis);
+        Answer answer = Answer.builder()
+                .build();
 
+        answer.connectAnalysis(analysis);
         Analysis savedAnalysis = analysisRepository.save(analysis);
         Long questionId = question2.getId();
 
@@ -89,6 +96,46 @@ class AnswerServiceImpTest extends IntegrationSupportTest {
         assertThat(result.getAnswerId()).isInstanceOf(Long.class);
     }
 
+    @DisplayName("이미 질문에 대한 답변이 있다면 답변할 수 없다.")
+    @Test
+    void createAnswerException() throws IOException {
+        // given
+        User user = createUser();
+        userRepository.save(user);
+
+        Question question1 = createQuestion(QuestionContent.FIXED_QUESTION1);
+        Question question2 = createQuestion(QuestionContent.FIXED_QUESTION2);
+        Question question3 = createQuestion(QuestionContent.UNFIXED_QUESTION1);
+        Question question4 = createQuestion(QuestionContent.UNFIXED_QUESTION3);
+        List<Question> questions = List.of(question1, question2, question3, question4);
+
+        Analysis analysis = createAnalysis(user, questions);
+        question1.connectAnalysis(analysis);
+        question2.connectAnalysis(analysis);
+        question3.connectAnalysis(analysis);
+        question4.connectAnalysis(analysis);
+        Answer answer = Answer.builder()
+                .build();
+
+        answer.connectAnalysis(analysis);
+        question2.connectAnswer(answer);
+
+        Analysis savedAnalysis = analysisRepository.save(analysis);
+        Long questionId = question2.getId();
+
+        MultipartFile multipartFile = new MockMultipartFile("file",
+                tempFile.getName(),
+                Files.probeContentType(tempFile.toPath()),
+                Files.readAllBytes(tempFile.toPath())
+        );
+
+        // when && then
+        assertThatThrownBy(() -> answerService.createAnswer(savedAnalysis.getId(), multipartFile, questionId))
+                .isInstanceOf(AnswerConflictException.class)
+                .hasMessage("이미 질문에 대한 답변이 존재합니다.");
+    }
+
+
     private static Analysis createAnalysis(User user, List<Question> questions) {
         return Analysis.builder()
                 .user(user)
@@ -100,10 +147,10 @@ class AnswerServiceImpTest extends IntegrationSupportTest {
         return Question.of(questionContent);
     }
 
-    private static User createUser(String socialId, SocialType socialType) {
+    private static User createUser() {
         return User.builder()
-                .socialId(socialId)
-                .socialType(socialType)
+                .socialId("socialId")
+                .socialType(SocialType.APPLE)
                 .build();
     }
 

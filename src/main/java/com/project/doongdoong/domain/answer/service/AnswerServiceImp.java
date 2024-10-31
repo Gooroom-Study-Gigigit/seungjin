@@ -20,12 +20,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.multipart.MultipartFile;
 
-import java.util.Optional;
-
-@Service @Slf4j
+@Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AnswerServiceImp implements AnswerService{
+public class AnswerServiceImp implements AnswerService {
 
     private final VoiceRepository voiceRepository;
     private final VoiceService voiceService;
@@ -38,31 +37,41 @@ public class AnswerServiceImp implements AnswerService{
     @Transactional
     @Override
     public AnswerCreateResponseDto createAnswer(Long analysisId, MultipartFile file, Long questionId) {
-        Analysis findAnalysis = analysisRepository.findAnalysisWithQuestion(analysisId)
-                .orElseThrow(AnalysisNotFoundException::new);
+        Question matchedQuestion = findQuestionFromAnalysis(analysisId, questionId);
 
-        Question matchedQuestion = findAnalysis.getQuestions().stream()
-                .filter(question -> (long)question.getId() == (long)questionId)
-                .findFirst().orElseThrow(NoMatchingQuestionException::new);
-
-        if(Optional.ofNullable(matchedQuestion.getAnswer()).isPresent()){ // 이미 설정된 question - answer이 존재할 때 다시 접근하려고 하면 예외 발생
+        if (matchedQuestion.hasAnswer()) { // 이미 설정된 question - answer이 존재할 때 다시 접근하려고 하면 예외 발생
             throw new AnswerConflictException();
         }
+        Voice voice = saveVoiceFrom(file);
+        Answer answer = linkAndSaveToAnswer(voice, matchedQuestion);
 
-        VoiceDetailResponseDto voiceDto = voiceService.saveVoice(file);
-        Voice voice = voiceRepository.findVoiceByAccessUrl(voiceDto.getAccessUrl()).orElseThrow(() -> new VoiceUrlNotFoundException());
+        return AnswerCreateResponseDto.builder()
+                .answerId(answer.getId())
+                .build();
+    }
 
+    private Answer linkAndSaveToAnswer(Voice voice, Question matchedQuestion) {
         Answer answer = Answer.builder()
                 .content(null)
                 .voice(voice)
                 .build();
 
-        answer.connectAnalysis(findAnalysis);
         matchedQuestion.connectAnswer(answer);
         answerRepository.save(answer);
+        return answer;
+    }
 
-        return AnswerCreateResponseDto.builder()
-                .answerId(answer.getId())
-                .build();
+    private Voice saveVoiceFrom(MultipartFile file) {
+        VoiceDetailResponseDto voiceDto = voiceService.saveVoice(file);
+        return voiceRepository.findVoiceByAccessUrl(voiceDto.getAccessUrl()).orElseThrow(VoiceUrlNotFoundException::new);
+    }
+
+    private Question findQuestionFromAnalysis(Long analysisId, Long questionId) {
+        Analysis findAnalysis = analysisRepository.findAnalysisWithQuestion(analysisId)
+                .orElseThrow(AnalysisNotFoundException::new);
+
+        return findAnalysis.getQuestions().stream()
+                .filter(question -> question.getId() == (long) questionId)
+                .findFirst().orElseThrow(NoMatchingQuestionException::new);
     }
 }

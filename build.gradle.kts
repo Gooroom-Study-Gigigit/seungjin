@@ -51,7 +51,6 @@ dependencies {
 
 
     implementation("io.netty:netty-resolver-dns-native-macos:4.1.96.Final:osx-aarch_64")
-//	implementation('io.netty:netty-resolver-dns-native-macos')
 
 	// 스프링 부트 3.0 이상 query dls
 	implementation("com.querydsl:querydsl-jpa:5.0.0:jakarta")
@@ -76,15 +75,12 @@ dependencies {
     testImplementation("org.springframework.restdocs:spring-restdocs-mockmvc")
 
 }
-
 tasks.withType<Test> {
-	useJUnitPlatform()
+    useJUnitPlatform()
+    //systemProperty("spring.profiles.active", "test")
 }
 
 // Querydsl 빌드 옵션 (옵셔널)
-/**
- * QueryDSL Build Options
- */
 val querydslDir = "src/main/generated"
 
 sourceSets {
@@ -109,6 +105,9 @@ val snippetsDir by extra { file("build/generated-snippets") }
 
 tasks.test {
     useJUnitPlatform()
+    doFirst { // 기존
+        //snippetsDir.deleteRecursively()
+    }
     outputs.dir(snippetsDir) // 테스트 결과를 Snippets 디렉터리에 저장
 }
 

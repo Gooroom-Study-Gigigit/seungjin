@@ -30,15 +30,19 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import static com.project.doongdoong.domain.answer.service.AnswerServiceImp.MAX_ANSWER_COUNT;
 
-@Service @Slf4j
+@Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class AnalysisServiceImp implements AnalysisService{
+public class AnalysisServiceImp implements AnalysisService {
 
     private final VoiceRepository voiceRepository;
     private final UserRepository userRepository;
@@ -56,47 +60,55 @@ public class AnalysisServiceImp implements AnalysisService{
     @Transactional
     @Override
     public AnalysisCreateResponseDto createAnalysis(String uniqueValue) {
-        String[] values = parseUniqueValue(uniqueValue); // 사용자 정보 찾기
-        User user = userRepository.findBySocialTypeAndSocialId(SocialType.customValueOf(values[1]), values[0])
-                .orElseThrow(UserNotFoundException::new);
-
-        List<Question> questions = questionProvider.createRandomQuestions(); // 질문 가져오기
+        User user = findUserBy(uniqueValue);
+        List<Question> questions = questionProvider.createRandomQuestions();
 
         Analysis analysis = Analysis.of(user, questions);
 
-        // QuestionContent 리스트 추출 및 Voice 조회 후 Map으로 변환
-        Map<QuestionContent, Voice> voicesMap = voiceRepository.findVoiceAllByQuestionContentIn(
-                        questions.stream()
-                                .map(Question::getQuestionContent)
-                                .collect(Collectors.toList())
-                ).stream()
-                .collect(Collectors.toMap(Voice::getQuestionContent, voice -> voice));
+        Map<QuestionContent, Voice> voicesMap = generateVoicesMapFor(questions);
 
-        // 각 Question과 Voice 매핑 후 리스트 세팅
         List<String> accessUrls = new ArrayList<>();
         List<String> questionTexts = new ArrayList<>();
         List<Long> questionIds = new ArrayList<>();
+        linkAnalysisWith(analysis, questions, voicesMap, questionTexts, accessUrls, questionIds);
 
-        // 랜덤 질문을 기준으로 분석과 연결 및 반환할 정보값 추가
+        analysisRepository.save(analysis);
+
+        return AnalysisCreateResponseDto.of(analysis.getId(), questionIds, questionTexts, accessUrls);
+    }
+
+    private void linkAnalysisWith(Analysis analysis, List<Question> questions, Map<QuestionContent, Voice> voicesMap, List<String> questionTexts, List<String> accessUrls, List<Long> questionIds) {
         questions.forEach(question -> {
             question.connectAnalysis(analysis); // 연관관계 설정
             Voice voice = Optional.ofNullable(voicesMap.get(question.getQuestionContent()))
                     .orElseThrow(VoiceNotFoundException::new);
 
             questionTexts.add(question.getQuestionContent().getText());
-            accessUrls.add(voice.getAccessUrl());
             questionIds.add(question.getId());
+            accessUrls.add(voice.getAccessUrl());
+
         });
+    }
 
-        // 저장하기5
-        analysisRepository.save(analysis);
+    private Map<QuestionContent, Voice> generateVoicesMapFor(List<Question> questions) {
+        List<QuestionContent> questionContents = questions.stream()
+                .map(Question::getQuestionContent)
+                .collect(Collectors.toList());
 
-        return AnalysisCreateResponseDto.of(analysis.getId(), questionIds,questionTexts,accessUrls);
+        return voiceRepository.findVoiceAllByQuestionContentIn(questionContents)
+                .stream()
+                .collect(Collectors.toMap(Voice::getQuestionContent, voice -> voice));
+    }
+
+    private User findUserBy(String uniqueValue) {
+        String[] values = parseUniqueValue(uniqueValue); // 사용자 정보 찾기
+
+        return  userRepository.findBySocialTypeAndSocialId(SocialType.customValueOf(values[1]), values[0])
+                .orElseThrow(UserNotFoundException::new);
     }
 
     private static String[] parseUniqueValue(String uniqueValue) {
-        String[] values = uniqueValue.split("_"); // 사용자 찾기
-        return values;
+        return uniqueValue.split("_"); // 사용자 찾기
     }
 
     @Override
@@ -195,8 +207,7 @@ public class AnalysisServiceImp implements AnalysisService{
 
         Optional<Analysis> analysis = analysisRepository.findFirstByUserOrderByAnalyzeTimeDesc(user);
         List<FeelingStateResponseDto> result = null;
-        if(analysis.isPresent())
-        {
+        if (analysis.isPresent()) {
             Analysis findAnalysis = analysis.get();
             LocalDateTime endTime = findAnalysis.getCreatedTime().plusDays(1).truncatedTo(ChronoUnit.DAYS);
             LocalDateTime startTime = endTime.minusDays(6).truncatedTo(ChronoUnit.DAYS);
@@ -218,7 +229,7 @@ public class AnalysisServiceImp implements AnalysisService{
         User user = userRepository.findBySocialTypeAndSocialIdWithAnalysisToday(SocialType.customValueOf(values[1]), values[0], now)
                 .orElseThrow(() -> new UserNotFoundException());
 
-        if(checkFirstGrowthToday(user)){
+        if (checkFirstGrowthToday(user)) {
             user.growUp();
         }
 
@@ -227,7 +238,7 @@ public class AnalysisServiceImp implements AnalysisService{
                 .map(answer -> answer.getVoice())
                 .collect(Collectors.toList());
 
-        if(isAllAnswerdBy(voices)){ //만약 모든 질문에 대한 답변이 없는 경우, 답변이 부족하다는 예외 발생
+        if (isAllAnswerdBy(voices)) { //만약 모든 질문에 대한 답변이 없는 경우, 답변이 부족하다는 예외 발생
             throw new AllAnswersNotFoundException();
         }
         if (isAlreadyAnalyzed(findAnalysis)) { // 분석은 1번만 가능
@@ -238,7 +249,7 @@ public class AnalysisServiceImp implements AnalysisService{
         List<FellingStateCreateResponse> responseByVoice = webClientUtil.callAnalyzeEmotionVoice(voices);
 
         List<Answer> answers = findAnalysis.getAnswers();
-        for(int i=0; i<responseByText.size(); i++){
+        for (int i = 0; i < responseByText.size(); i++) {
             answers.get(i).changeContent(responseByText.get(i).getTranscribedText());
         }
 
@@ -270,7 +281,7 @@ public class AnalysisServiceImp implements AnalysisService{
 
     private boolean checkFirstGrowthToday(User user) {
         List<Analysis> list = user.getAnalysisList().stream()
-                .filter(analysis ->   LocalDate.now().equals(analysis.getAnalyzeTime()))
+                .filter(analysis -> LocalDate.now().equals(analysis.getAnalyzeTime()))
                 .collect(Collectors.toList());
         return list.size() == 0 ? true : false;
     }
@@ -284,15 +295,13 @@ public class AnalysisServiceImp implements AnalysisService{
                 .map(answer -> answer.getVoice().getAccessUrl())
                 .collect(Collectors.toList());
 
-        if(findAnalysis.getAnswers().size() != 0){
+        if (findAnalysis.getAnswers().size() != 0) {
             findAnalysis.getAnswers().stream().forEach(answer -> answer.disconnectWithVoice()); // 연관관계 끊기
             voiceService.deleteVoices(accessUrls); // voice를 참조하는 객체 없으므로 삭제 가능 -> 벌크 삭제로 쿼리 최적화 필요
         }
 
         analysisRepository.deleteById(analysisId); // analysis 삭제로 question, answer 삭제 로직 -> voiceService.deleteVoices로 answer.voice와 관련 S3 파일은 이미 삭제.
     }
-
-
 
 
 }

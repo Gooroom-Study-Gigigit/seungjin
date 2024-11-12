@@ -1,0 +1,22 @@
+config:
+  target: "http://52.79.134.13:8080"
+  phases:
+    - duration: 20
+      arrivalRate: 40
+      name: Warm up
+    - duration: 20
+      arrivalRate: 70
+      name: Fast up
+
+scenarios:
+  - name: "create analysis"
+    flow:
+      - post:
+          url: "/api/v1/analysis"
+          headers:
+            authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3aGZma2FvczAwN0BuYXZlci5jb20iLCJzb2NpYWxUeXBlIjoiQVBQTEUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZXhwIjoxNzMxMzE2MTU5fQ.7W6hoSO94I4CT411HbuPdVWC3sUZUrQ-n1cLW7xaPLw'
+#      - get:
+#          url: "/api/v1/analysis"
+#          headers:
+#            authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3aGZma2FvczAwN0BuYXZlci5jb20iLCJzb2NpYWxUeXBlIjoiQVBQTEUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZXhwIjoxNzMxMzA5NTg5fQ.gYCKYCnjtbI1qYaoSQUclkFX6KAdGAxaK5DLh27S8kI'
+#

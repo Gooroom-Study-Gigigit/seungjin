@@ -7,7 +7,7 @@ import com.project.doongdoong.domain.image.exception.FileDeleteException;
 import com.project.doongdoong.domain.image.exception.FileEmptyException;
 import com.project.doongdoong.domain.image.exception.FileUploadException;
 import com.project.doongdoong.domain.question.model.QuestionContent;
-import com.project.doongdoong.domain.voice.exception.VoiceUrlNotFoundException;
+import com.project.doongdoong.domain.voice.exception.VoiceNotFoundException;
 import org.apache.commons.io.FilenameUtils;
 import com.project.doongdoong.domain.voice.dto.request.VoiceSaveRequestDto;
 import com.project.doongdoong.domain.voice.dto.response.VoiceDetailResponseDto;
@@ -95,7 +95,7 @@ public class VoiceServiceImp implements VoiceService{
 
     @Override
     public void deleteVoice(String imageUrl) {
-        Voice voice = voiceRepository.findByAccessUrl(imageUrl).orElseThrow(() -> new VoiceUrlNotFoundException());
+        Voice voice = voiceRepository.findByAccessUrl(imageUrl).orElseThrow(() -> new VoiceNotFoundException());
         try{
             voiceRepository.delete(voice);
             String filename = VOICE_KEY + voice.getStoredName();

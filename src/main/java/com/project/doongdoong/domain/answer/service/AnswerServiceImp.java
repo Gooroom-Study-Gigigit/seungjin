@@ -10,7 +10,7 @@ import com.project.doongdoong.domain.answer.repository.AnswerRepository;
 import com.project.doongdoong.domain.question.exception.NoMatchingQuestionException;
 import com.project.doongdoong.domain.question.model.Question;
 import com.project.doongdoong.domain.voice.dto.response.VoiceDetailResponseDto;
-import com.project.doongdoong.domain.voice.exception.VoiceUrlNotFoundException;
+import com.project.doongdoong.domain.voice.exception.VoiceNotFoundException;
 import com.project.doongdoong.domain.voice.model.Voice;
 import com.project.doongdoong.domain.voice.repository.VoiceRepository;
 import com.project.doongdoong.domain.voice.service.VoiceService;
@@ -63,7 +63,7 @@ public class AnswerServiceImp implements AnswerService {
 
     private Voice saveVoiceFrom(MultipartFile file) {
         VoiceDetailResponseDto voiceDto = voiceService.saveVoice(file);
-        return voiceRepository.findVoiceByAccessUrl(voiceDto.getAccessUrl()).orElseThrow(VoiceUrlNotFoundException::new);
+        return voiceRepository.findVoiceByAccessUrl(voiceDto.getAccessUrl()).orElseThrow(VoiceNotFoundException::new);
     }
 
     private Question findQuestionFromAnalysis(Long analysisId, Long questionId) {

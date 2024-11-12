@@ -25,27 +25,29 @@ import java.util.Arrays;
 import static com.project.doongdoong.global.config.SecurityConfig.ALLOW_REQUEST;
 
 @RequiredArgsConstructor
-@Slf4j  //@Component
+@Slf4j
 public class JwtAuthFilter extends OncePerRequestFilter {
 
     private final JwtProvider jwtProvider;
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
+        String requestURI = request.getRequestURI();
+
+        if (requestURI.startsWith("/actuator")) { // 엑츄에이터 요청인 경우 필터링을 건너뛰기
+            filterChain.doFilter(request, response);
+            return;
+        }
 
         try{
             boolean isAllowed = Arrays.stream(ALLOW_REQUEST).anyMatch(uri -> request.getRequestURI().equals(uri));
             log.info("isAllowed = {}", isAllowed);
             if(!isAllowed){
-                String requestURI = request.getRequestURI();
-                // request Header에서 AccessToken을 가져온다.
                 String token = resolveToken(request);
-                // 만약 "Bearer "이 붙어서 온다면 제거해줘야 함. 이따 빼주는 로직이 없다면 추가
                 log.info("JWT 필터 검사 시작.");
                 log.info("Bearer 삭제한 token 값 = {}", token);
 
-                //토큰이 존재하면서 유효하다면 Authentication 객체 생성
-                //시큐리티 컨텍스트 홀더에 Authentication 저장
+                //토큰이 존재하면서 유효하다면 Authentication 객체 생성, 시큐리티 컨텍스트 홀더에 Authentication 저장
                 if(jwtProvider.validateToken(token) && !jwtProvider.checkLogoutToken(token)) {
                     Authentication authentication = jwtProvider.getAuthentication(token);
                     SecurityContextHolder.getContext().setAuthentication(authentication);
@@ -67,12 +69,9 @@ public class JwtAuthFilter extends OncePerRequestFilter {
             setErrorResponse(response, HttpStatus.UNAUTHORIZED, "지원하지 않는 토큰입니다.");
         } catch (IllegalArgumentException e) {
             log.info("JWT 토큰이 잘못되었습니다.");
+            log.error("잘못된 JWT 토큰 오류 = {}", e.getMessage());
             setErrorResponse(response, HttpStatus.UNAUTHORIZED, "JWT 토큰이 잘못되었습니다.");
-        } /*catch (Exception e) {
-            log.info("새로운 JWT 토큰 오류입니다.");
-            log.info("예외 메세지 = {}",e.getMessage());
-            setErrorResponse(response, HttpStatus.UNAUTHORIZED,  "새로운 JWT 토큰 오류입니다.");
-        }*/
+        }
 
 
     }

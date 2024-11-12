@@ -36,36 +36,9 @@
                     .authorizeHttpRequests(auth -> auth
                             .requestMatchers(ALLOW_REQUEST).permitAll()
                                     .anyRequest().authenticated()
-                    )/*.oauth2Login( oauth2 -> oauth2
-                            .successHandler(successHandler())
-                            .userInfoEndpoint(userInfoEndpointConfig -> userInfoEndpointConfig
-                                    .userService(oAuth2UserService))
-
-                    )*/ // native app 형식이라 프론트(ios)에서 sdk로 모든 소셜 과정 처리 -> oauth2 clinet 대신 security가 제공하는 기본 값 사용하자
-                    .addFilterBefore(new JwtAuthFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
+                    ).addFilterBefore(new JwtAuthFilter(jwtProvider), UsernamePasswordAuthenticationFilter.class)
                     .build();
-                     // 추후 웹 사용으로 인해 위 설정이 필요하다면 블로그 링크를 통해 다시 구현
-                    //웹과 다르게 앱에서는 카카오 SDK와 같이 클라이언트 측에서 직접 OAuth 검증을 하므로 필요가 없음.
-                    // OAuth2 로그인 설정
         }
-        /*@Bean
-        public AuthenticationSuccessHandler successHandler() {
-            return ((request, response, authentication) -> {
-                DefaultOAuth2User defaultOAuth2User = (DefaultOAuth2User) authentication.getPrincipal();
-
-                String id = defaultOAuth2User.getAttributes().get("id").toString();
-                String body = """
-                    {"id":"%s"}
-                    """.formatted(id);
-
-                response.setContentType(MediaType.APPLICATION_JSON_VALUE);
-                response.setCharacterEncoding(StandardCharsets.UTF_8.name());
-
-                PrintWriter writer = response.getWriter();
-                writer.println(body);
-                writer.flush();
-            });
-        }*/
 
 
     }

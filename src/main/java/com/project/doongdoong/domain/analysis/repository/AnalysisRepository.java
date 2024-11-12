@@ -22,6 +22,7 @@ public interface AnalysisRepository extends JpaRepository<Analysis, Long>, Analy
 
     @Query("select a from Analysis a left outer join fetch a.counsel where a.user = :user and a.id = :id")
     Optional<Analysis> findByUserAndId(@Param("user") User user, @Param("id") Long analysisId);
+
     Page<Analysis> findAllByUserOrderByCreatedTime(User user, Pageable pageable);
 
     // 현재 시간 기준으로 일주일 치 분석값 하루 기준으로 그룹핑해서 가져오기

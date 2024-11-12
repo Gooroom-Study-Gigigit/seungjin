@@ -45,6 +45,13 @@ public class Analysis extends BaseEntity {
     @OneToOne(fetch = LAZY, mappedBy = "analysis")
     private Counsel counsel;
 
+    public static Analysis of(User user, List<Question> questions){
+        return Analysis.builder()
+                .user(user)
+                .questions(questions)
+                .build();
+    }
+
     @Builder
     public Analysis(User user, List<Question> questions){
         this.feelingState = 0;

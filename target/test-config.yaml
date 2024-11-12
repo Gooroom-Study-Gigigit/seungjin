@@ -18,5 +18,5 @@ scenarios:
       - get:
           url: "/api/v1/analysis/1"
           headers:
-            authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3aGZma2FvczAwN0BuYXZlci5jb20iLCJzb2NpYWxUeXBlIjoiQVBQTEUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZXhwIjoxNzMxMzg5NzAxfQ.eQHazZYFL7ME6ONI0NW9Ap3nIv9QdZ0egtjB1BKng6A'
+            authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3aGZma2FvczAwN0BuYXZlci5jb20iLCJzb2NpYWxUeXBlIjoiQVBQTEUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZXhwIjoxNzMxNDM1NzM5fQ.o_0R-BBZaoZeWQXuiSqW6-b9Ip6aRr69ytVwtiSMDQ8'
 

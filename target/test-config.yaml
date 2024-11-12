@@ -11,12 +11,12 @@ config:
 scenarios:
   - name: "create analysis"
     flow:
-      - post:
-          url: "/api/v1/analysis"
-          headers:
-            authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3aGZma2FvczAwN0BuYXZlci5jb20iLCJzb2NpYWxUeXBlIjoiQVBQTEUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZXhwIjoxNzMxMzE2MTU5fQ.7W6hoSO94I4CT411HbuPdVWC3sUZUrQ-n1cLW7xaPLw'
-#      - get:
+#      - post:
 #          url: "/api/v1/analysis"
 #          headers:
-#            authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3aGZma2FvczAwN0BuYXZlci5jb20iLCJzb2NpYWxUeXBlIjoiQVBQTEUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZXhwIjoxNzMxMzA5NTg5fQ.gYCKYCnjtbI1qYaoSQUclkFX6KAdGAxaK5DLh27S8kI'
-#
+#            authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3aGZma2FvczAwN0BuYXZlci5jb20iLCJzb2NpYWxUeXBlIjoiQVBQTEUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZXhwIjoxNzMxMzE2MTU5fQ.7W6hoSO94I4CT411HbuPdVWC3sUZUrQ-n1cLW7xaPLw'
+      - get:
+          url: "/api/v1/analysis/1"
+          headers:
+            authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJzdWIiOiJ3aGZma2FvczAwN0BuYXZlci5jb20iLCJzb2NpYWxUeXBlIjoiQVBQTEUiLCJyb2xlIjoiUk9MRV9VU0VSIiwiZXhwIjoxNzMxMzg5NzAxfQ.eQHazZYFL7ME6ONI0NW9Ap3nIv9QdZ0egtjB1BKng6A'
+

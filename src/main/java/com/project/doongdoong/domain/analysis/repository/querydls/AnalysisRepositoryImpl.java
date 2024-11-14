@@ -1,6 +1,7 @@
 package com.project.doongdoong.domain.analysis.repository.querydls;
 
 import com.project.doongdoong.domain.analysis.model.Analysis;
+import com.project.doongdoong.domain.counsel.model.QCounsel;
 import com.project.doongdoong.domain.voice.model.QVoice;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import jakarta.persistence.EntityManager;
@@ -9,6 +10,7 @@ import java.util.Optional;
 
 import static com.project.doongdoong.domain.analysis.model.QAnalysis.analysis;
 import static com.project.doongdoong.domain.answer.model.QAnswer.answer;
+import static com.project.doongdoong.domain.counsel.model.QCounsel.*;
 import static com.project.doongdoong.domain.voice.model.QVoice.*;
 
 public class AnalysisRepositoryImpl implements AnalysisRepositoryCustom {
@@ -29,5 +31,16 @@ public class AnalysisRepositoryImpl implements AnalysisRepositoryCustom {
                 .where(analysis.id.eq(analysisId))
                 .fetchOne()
                 );
+    }
+
+    @Override
+    public Optional<Analysis> searchFullAnalysisBy(Long analysisId) {
+
+        return Optional.ofNullable(
+                queryFactory.selectFrom(analysis)
+                        .leftJoin(analysis.counsel, counsel).fetchJoin()
+                        .where(analysis.id.eq(analysisId))
+                        .fetchOne()
+        );
     }
 }

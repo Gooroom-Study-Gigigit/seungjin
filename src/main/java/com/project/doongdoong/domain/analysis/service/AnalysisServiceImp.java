@@ -107,48 +107,51 @@ public class AnalysisServiceImp implements AnalysisService {
                 .orElseThrow(UserNotFoundException::new);
     }
 
-    private static String[] parseUniqueValue(String uniqueValue) {
+    private String[] parseUniqueValue(String uniqueValue) {
         return uniqueValue.split("_"); // 사용자 찾기
     }
 
     @Override
     public AnalysisDetailResponse getAnalysis(Long analysisId) {
-        Analysis findAnalysis = analysisRepository.findById(analysisId).orElseThrow(() -> new AnalysisNotFoundException()); // fetch join으로 최적화 필요
-        List<Question> questions = findAnalysis.getQuestions();
-        // questions에 해당하는 answers 가져오기
+        Analysis findAnalysis = analysisRepository.searchFullAnalysisBy(analysisId).orElseThrow(AnalysisNotFoundException::new);
 
+        List<Question> questions = findAnalysis.getQuestions();
         List<QuestionContent> questionContents = extractQuestionContentsBy(questions);
+
         List<String> questionTexts = extractQuestionTextBy(questionContents);
-        List<Long> questionIds = questions.stream().map(question -> question.getId()).collect(Collectors.toList());
+        List<Long> questionIds = extractQuestionIdBy(questions);
 
         List<Voice> findVoices = voiceRepository.findVoiceAllByQuestionContentIn(questionContents);
-
         Map<QuestionContent, String> voiceMap = mapVoiceToQuestionInformation(findVoices);
-        List<String> questionVoiceAccessUrls = questionContents.stream()
-                .map(key -> voiceMap.get(key))
-                .collect(Collectors.toList());
+        List<String> questionVoiceAccessUrls = findUrlsByMatchingQuestionContentsWithVoice(questionContents, voiceMap);
 
-        List<String> answerContents = questions.stream()
-                .map(question -> Optional.ofNullable(question.getAnswer())
-                        .map(answer -> answer.getContent())
-                        .orElse(DEFAULT_NO_ANSWER_MESSAGE))
-                .collect(Collectors.toList());
+        List<String> answerContents = findAnswerConetentsByMatchingQuestionWithAnswer(questions);
 
-
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT);
-
-        return AnalysisDetailResponse.builder()
-                .analysisId(findAnalysis.getId())
-                .time(findAnalysis.getCreatedTime().format(formatter))
-                .feelingState(findAnalysis.getFeelingState())
-                .questionIds(questionIds)
-                .questionContent(questionTexts)
-                .questionContentVoiceUrls(questionVoiceAccessUrls)
-                .answerContent(answerContents)
-                .build();
+        return AnalysisDetailResponse.of(analysisId, findAnalysis.getFeelingState(), findAnalysis.getCreatedTime().format(DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT)),
+                questionTexts, questionIds, questionVoiceAccessUrls, answerContents);
     }
 
-    private static Map<QuestionContent, String> mapVoiceToQuestionInformation(List<Voice> findVoices) {
+    private List<String> findAnswerConetentsByMatchingQuestionWithAnswer(List<Question> questions) {
+        return questions.stream()
+                .map(question ->
+                        Optional.ofNullable(question.getAnswer())
+                        .map(Answer::getContent)
+                        .orElse(DEFAULT_NO_ANSWER_MESSAGE))
+                .collect(Collectors.toList());
+    }
+
+    private List<String> findUrlsByMatchingQuestionContentsWithVoice(List<QuestionContent> questionContents, Map<QuestionContent, String> voiceMap) {
+        return questionContents.stream()
+                .map(voiceMap::get)
+                .collect(Collectors.toList());
+    }
+
+    private List<Long> extractQuestionIdBy(List<Question> questions) {
+        return questions.stream()
+                .map(Question::getId).collect(Collectors.toList());
+    }
+
+    private Map<QuestionContent, String> mapVoiceToQuestionInformation(List<Voice> findVoices) {
         return findVoices.stream()
                 .collect(Collectors.toMap(
                         Voice::getQuestionContent,
@@ -157,18 +160,16 @@ public class AnalysisServiceImp implements AnalysisService {
                 ));
     }
 
-    private static List<String> extractQuestionTextBy(List<QuestionContent> questionContents) {
-        List<String> questionTexts = questionContents.stream()
-                .map(questionContent -> questionContent.getText())
+    private List<String> extractQuestionTextBy(List<QuestionContent> questionContents) {
+        return questionContents.stream()
+                .map(QuestionContent::getText)
                 .collect(Collectors.toList());
-        return questionTexts;
     }
 
-    private static List<QuestionContent> extractQuestionContentsBy(List<Question> questions) {
-        List<QuestionContent> questionContents = questions.stream()
-                .map(question -> question.getQuestionContent())
+    private List<QuestionContent> extractQuestionContentsBy(List<Question> questions) {
+        return questions.stream()
+                .map(Question::getQuestionContent)
                 .collect(Collectors.toList());
-        return questionContents;
     }
 
     @Override

@@ -6,4 +6,6 @@ import java.util.Optional;
 
 public interface AnalysisRepositoryCustom {
     Optional<Analysis> searchAnalysisWithVoiceOfAnswer(Long analysisId);
+
+    Optional<Analysis> searchFullAnalysisBy(Long analysisId);
 }

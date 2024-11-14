@@ -1,5 +1,6 @@
 package com.project.doongdoong.domain.analysis.dto.response;
 
+import com.project.doongdoong.domain.analysis.model.Analysis;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -28,5 +29,18 @@ public class AnalysisDetailResponse {
         this.questionContent = questionContent;
         this.questionContentVoiceUrls = questionContentVoiceUrls;
         this.answerContent = answerContent;
+    }
+
+    public static AnalysisDetailResponse of(Long analysisId, double feelingState, String time, List<String> questionContent
+            , List<Long> questionIds, List<String> questionContentVoiceUrls, List<String> answerContent) {
+        return AnalysisDetailResponse.builder()
+                .analysisId(analysisId)
+                .time(time)
+                .feelingState(feelingState)
+                .questionIds(questionIds)
+                .questionContent(questionContent)
+                .questionContentVoiceUrls(questionContentVoiceUrls)
+                .answerContent(answerContent)
+                .build();
     }
 }

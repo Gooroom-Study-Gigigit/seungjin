@@ -1,5 +1,6 @@
 package com.project.doongdoong.domain.analysis.repository;
 
+import com.project.doongdoong.domain.counsel.model.Counsel;
 import com.project.doongdoong.module.IntegrationSupportTest;
 import com.project.doongdoong.domain.analysis.dto.response.FeelingStateResponseDto;
 import com.project.doongdoong.domain.analysis.model.Analysis;
@@ -13,6 +14,7 @@ import com.project.doongdoong.domain.user.model.User;
 import com.project.doongdoong.domain.user.repository.UserRepository;
 import com.project.doongdoong.domain.voice.model.Voice;
 import com.project.doongdoong.domain.voice.repository.VoiceRepository;
+import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,6 +27,7 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
+import static com.project.doongdoong.domain.question.model.QuestionContent.*;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
@@ -177,10 +180,10 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
         User user = createUser("socialId", SocialType.APPLE);
         User savedUser = userRepository.save(user);
 
-        Question question1 = createQuestion(QuestionContent.FIXED_QUESTION1);
-        Question question2 = createQuestion(QuestionContent.FIXED_QUESTION2);
-        Question question3 = createQuestion(QuestionContent.UNFIXED_QUESTION1);
-        Question question4 = createQuestion(QuestionContent.UNFIXED_QUESTION1);
+        Question question1 = createQuestion(FIXED_QUESTION1);
+        Question question2 = createQuestion(FIXED_QUESTION2);
+        Question question3 = createQuestion(UNFIXED_QUESTION1);
+        Question question4 = createQuestion(UNFIXED_QUESTION1);
 
         List<Question> questions = List.of(question1, question2, question3, question4);
 
@@ -190,15 +193,15 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
         question3.connectAnalysis(analysis);
         question4.connectAnalysis(analysis);
 
-        Analysis savedAnaylsis = analysisRepository.save(analysis);
+        Analysis savedAnalysis = analysisRepository.save(analysis);
 
         //when
-        Optional<Analysis> result = analysisRepository.findAnalysisWithQuestion(savedAnaylsis.getId());
+        Optional<Analysis> result = analysisRepository.findAnalysisWithQuestion(savedAnalysis.getId());
         //then
         assertThat(result.get()).isNotNull()
-                .isEqualTo(savedAnaylsis)
+                .isEqualTo(savedAnalysis)
                 .extracting("id", "user")
-                .contains(savedAnaylsis.getId(), savedUser);
+                .contains(savedAnalysis.getId(), savedUser);
 
         assertThat(result.get().getQuestions())
                 .hasSize(questions.size())
@@ -222,9 +225,9 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
         Analysis analysis = createAnalysis(user);
         userRepository.save(user);
 
-        Voice voice1 = createVoice("파일이름1", QuestionContent.FIXED_QUESTION1);
-        Voice voice2 = createVoice("파일이름2", QuestionContent.FIXED_QUESTION2);
-        Voice voice3 = createVoice("파일이름3", QuestionContent.UNFIXED_QUESTION1);
+        Voice voice1 = createVoice("파일이름1", FIXED_QUESTION1);
+        Voice voice2 = createVoice("파일이름2", FIXED_QUESTION2);
+        Voice voice3 = createVoice("파일이름3", UNFIXED_QUESTION1);
         Answer answer1 = createAnswer(voice1, "질문에 대한 답변 텍스트1");
         Answer answer2 = createAnswer(voice2, "질문에 대한 답변 텍스트2");
         Answer answer3 = createAnswer(voice3, "질문에 대한 답변 텍스트3");
@@ -238,29 +241,102 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
 
         //when
         Optional<Analysis> result = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysis.getId());
+
         //then
-        result.ifPresent(findAnalysis ->{
-            assertThat(findAnalysis).isNotNull();
-            List<Answer> answers = findAnalysis.getAnswers();
-            assertThat(answers).hasSize(3);
-            assertThat(answers)
-                    .extracting("content")
-                    .containsExactlyInAnyOrder(
-                            "질문에 대한 답변 텍스트1",
-                            "질문에 대한 답변 텍스트2",
-                            "질문에 대한 답변 텍스트3"
-                            //"질문에 대한 답변 텍스트4"
-                    );
-            assertThat(answers)
-                    .extracting("voice.originName")
-                    .containsExactlyInAnyOrder(
-                            "파일이름1",
-                            "파일이름2",
-                            "파일이름3"
-                            //"파일이름4"
-                    );
-        });
+        Analysis findAnalysis = result.get();
+        assertThat(findAnalysis).isNotNull();
+        List<Answer> answers = findAnalysis.getAnswers();
+        assertThat(answers).hasSize(3);
+        assertThat(answers)
+                .extracting("content")
+                .containsExactlyInAnyOrder(
+                        "질문에 대한 답변 텍스트1",
+                        "질문에 대한 답변 텍스트2",
+                        "질문에 대한 답변 텍스트3"
+                );
+        assertThat(answers)
+                .extracting("voice.originName")
+                .containsExactlyInAnyOrder(
+                        "파일이름1",
+                        "파일이름2",
+                        "파일이름3"
+                );
     }
+
+    @DisplayName("상담, 질문, 답변, 음성과 같이 분석에 대한 모든 정보를 조회한다.")
+    @Test
+    void searchFullAnalysisBy() {
+        //given
+        String socialId = "socialId";
+        SocialType socialType = SocialType.APPLE;
+        User user = createUser(socialId, socialType);
+        Question question1 = createQuestion(FIXED_QUESTION1);
+        Question question2 = createQuestion(FIXED_QUESTION2);
+        Question question3 = createQuestion(UNFIXED_QUESTION1);
+        Question question4 = createQuestion(UNFIXED_QUESTION3);
+
+        Analysis analysis = createAnalysis(user, List.of(question1, question2, question3, question4));
+        question1.connectAnalysis(analysis);
+        question2.connectAnalysis(analysis);
+        question3.connectAnalysis(analysis);
+        question4.connectAnalysis(analysis);
+        assertThat(analysis.getQuestions()).hasSize(4);
+
+        userRepository.save(user);
+
+        Voice voice1 = createVoice("파일이름1", FIXED_QUESTION1);
+        Voice voice2 = createVoice("파일이름2", FIXED_QUESTION2);
+        Voice voice3 = createVoice("파일이름3", UNFIXED_QUESTION1);
+        Voice voice4 = createVoice("파일이름4", UNFIXED_QUESTION3);
+        voiceRepository.saveAll(List.of(voice1, voice2, voice3, voice4));
+
+        Answer answer1 = createAnswer(voice1, "질문에 대한 답변 텍스트1");
+        Answer answer2 = createAnswer(voice2, "질문에 대한 답변 텍스트2");
+        Answer answer3 = createAnswer(voice3, "질문에 대한 답변 텍스트3");
+        Answer answer4 = createAnswer(voice4, "질문에 대한 답변 텍스트4");
+        answer1.connectAnalysis(analysis);
+        answer2.connectAnalysis(analysis);
+        answer3.connectAnalysis(analysis);
+        answer4.connectAnalysis(analysis);
+
+        question1.connectAnswer(answer1);
+        question2.connectAnswer(answer2);
+        question3.connectAnswer(answer3);
+        question4.connectAnswer(answer4);
+
+        answerRepository.saveAll(List.of(answer1,answer2, answer3, answer4));
+        analysisRepository.save(analysis);
+
+        // when
+        Optional<Analysis> result = analysisRepository.searchFullAnalysisBy(analysis.getId());
+
+        // then
+        assertThat(result).isPresent();
+        Analysis findAnalysis = result.get();
+
+        List<Answer> answers = findAnalysis.getAnswers();
+        assertThat(answers).hasSize(4);
+        assertThat(answers)
+                .extracting("content", "voice.originName")
+                .containsExactlyInAnyOrder(
+                        tuple("질문에 대한 답변 텍스트1", "파일이름1"),
+                        tuple("질문에 대한 답변 텍스트2", "파일이름2"),
+                        tuple("질문에 대한 답변 텍스트3", "파일이름3"),
+                        tuple("질문에 대한 답변 텍스트4", "파일이름4")
+                );
+
+        List<Question> questions = findAnalysis.getQuestions();
+        assertThat(questions).hasSize(4);
+
+        assertThat(questions)
+                .extracting("questionContent")
+                .containsExactlyInAnyOrder(FIXED_QUESTION1, FIXED_QUESTION2, UNFIXED_QUESTION1, UNFIXED_QUESTION3);
+
+        Counsel counsel = findAnalysis.getCounsel();
+        assertThat(counsel).isNull();
+
+    }
+
 
 
     private static Voice createVoice(String fileName, QuestionContent questionContent) {

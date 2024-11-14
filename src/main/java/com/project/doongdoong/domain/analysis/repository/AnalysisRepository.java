@@ -38,4 +38,7 @@ public interface AnalysisRepository extends JpaRepository<Analysis, Long>, Analy
 
     @Query("select analysis from Analysis analysis join fetch analysis.questions where analysis.id = :analysisId")
     Optional<Analysis> findAnalysisWithQuestion(@Param("analysisId") Long analysisId);
+
+    @Query("select analysis from Analysis analysis left outer join analysis.counsel where analysis.id = :id")
+    Optional<Analysis> findAnalysis(Long id);
 }

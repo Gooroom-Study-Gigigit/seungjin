@@ -12,6 +12,8 @@ build/
 # 성능 테스트 관련 파일 제외
 target/
 
+target/**
+
 ### STS ###
 .apt_generated
 .classpath

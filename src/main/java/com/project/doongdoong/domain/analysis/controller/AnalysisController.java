@@ -81,7 +81,7 @@ public class AnalysisController {
     @DeleteMapping("/{id}")
     @ResponseStatus(value = HttpStatus.NO_CONTENT)
     public ApiResponse<?> deleteAnalysis(@PathVariable("id") Long analysisId){
-        analysisService.removeAnaylsis(analysisId);
+        analysisService.removeAnalysis(analysisId);
         return ApiResponse.of(HttpStatus.NO_CONTENT,null, null);
     }
 }

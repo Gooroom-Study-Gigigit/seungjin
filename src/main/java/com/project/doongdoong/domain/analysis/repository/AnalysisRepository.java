@@ -26,6 +26,7 @@ public interface AnalysisRepository extends JpaRepository<Analysis, Long>, Analy
     Page<Analysis> findAllByUserOrderByCreatedTime(User user, Pageable pageable);
 
     // 현재 시간 기준으로 일주일 치 분석값 하루 기준으로 그룹핑해서 가져오기
+    // between보다 <= >= 이게 속도 빠르다그랫음
     @Query("select new com.project.doongdoong.domain.analysis.dto.response.FeelingStateResponseDto" +
             "(CONCAT(YEAR(a.analyzeTime), '-', MONTH(a.analyzeTime), '-', DAY(a.analyzeTime)), avg(a.feelingState))" +
             "from Analysis a where a.user = :user " +

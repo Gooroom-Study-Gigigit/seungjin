@@ -289,19 +289,25 @@ public class AnalysisServiceImp implements AnalysisService {
 
     @Transactional
     @Override
-    public void removeAnaylsis(Long analysisId) {
+    public void removeAnalysis(Long analysisId) {
         // anlaysis와 관련된 answer의 voice에 해당하는 S3 파일 삭제 로직
-        Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(() -> new AnalysisNotFoundException());
+        Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(AnalysisNotFoundException::new);
+        log.info("findAnalysis 찾기 종료 ");
         List<String> accessUrls = findAnalysis.getAnswers().stream()
                 .map(answer -> answer.getVoice().getAccessUrl())
                 .collect(Collectors.toList());
-
+        log.info("accessUrls 찾기 종료 = {}", accessUrls.toString());
         if (findAnalysis.getAnswers().size() != 0) {
             findAnalysis.getAnswers().stream().forEach(answer -> answer.disconnectWithVoice()); // 연관관계 끊기
             voiceService.deleteVoices(accessUrls); // voice를 참조하는 객체 없으므로 삭제 가능 -> 벌크 삭제로 쿼리 최적화 필요
         }
+        log.info("answers 관련된 voice 객체 삭제 종료");
 
         analysisRepository.deleteById(analysisId); // analysis 삭제로 question, answer 삭제 로직 -> voiceService.deleteVoices로 answer.voice와 관련 S3 파일은 이미 삭제.
+        log.info("analysis 삭제 종료");
+        /**
+         *
+         */
     }
 
 

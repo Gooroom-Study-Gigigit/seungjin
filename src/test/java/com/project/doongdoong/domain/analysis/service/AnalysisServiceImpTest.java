@@ -415,7 +415,7 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
 
     @Test
     @DisplayName("존재하는 분석을 삭제합니다.")
-    void removeAnaylsis(){
+    void removeAnalysis(){
         //given
         for(QuestionContent questionContent : QuestionContent.values()){ // initProvider 대체 -> TEST용
             Voice voice = Voice.initVoiceContentBuilder()
@@ -449,7 +449,7 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
         userRepository.save(user);
         Analysis savedAnalysis = analysisRepository.save(analysis);
         //when
-        analysisService.removeAnaylsis(savedAnalysis.getId());
+        analysisService.removeAnalysis(savedAnalysis.getId());
         //then
         boolean exists = analysisRepository.existsById(savedAnalysis.getId());
         assertThat(exists).isFalse(); // 삭제되었음을 검증

@@ -26,6 +26,7 @@ public class AnalysisRepositoryImpl implements AnalysisRepositoryCustom {
         return Optional.ofNullable(
                 queryFactory
                 .selectFrom(analysis)
+                .leftJoin(analysis.counsel, counsel).fetchJoin()
                 .leftJoin(analysis.answers, answer).fetchJoin()
                 .leftJoin(answer.voice, voice).fetchJoin()
                 .where(analysis.id.eq(analysisId))

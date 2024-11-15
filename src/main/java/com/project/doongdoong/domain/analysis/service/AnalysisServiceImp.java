@@ -296,7 +296,14 @@ public class AnalysisServiceImp implements AnalysisService {
         List<String> accessUrls = findAnalysis.getAnswers().stream()
                 .map(answer -> answer.getVoice().getAccessUrl())
                 .collect(Collectors.toList());
-        log.info("accessUrls 찾기 종료 = {}", accessUrls.toString());
+        List<Answer> answers = findAnalysis.getAnswers();
+        log.info("answer size = {}", answers.size()); int i=0;
+        for(String url : accessUrls) {
+
+            log.info("answer = {}", answers.get(i++));
+            log.info("url= {}", url);
+        }
+        log.info("accessUrls 찾기 종료");
         if (findAnalysis.getAnswers().size() != 0) {
             findAnalysis.getAnswers().stream().forEach(answer -> answer.disconnectWithVoice()); // 연관관계 끊기
             voiceService.deleteVoices(accessUrls); // voice를 참조하는 객체 없으므로 삭제 가능 -> 벌크 삭제로 쿼리 최적화 필요

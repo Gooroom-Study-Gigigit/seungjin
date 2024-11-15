@@ -175,7 +175,7 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
 
     @Test
     @DisplayName("분석 정보와 분석에 사용된 질문들을 조회합니다.")
-    void findAnalysisWithQuestion(){
+    void findAnalysisWithCounselByWithQuestion(){
         //given
         User user = createUser("socialId", SocialType.APPLE);
         User savedUser = userRepository.save(user);

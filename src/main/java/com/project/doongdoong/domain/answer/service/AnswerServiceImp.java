@@ -44,6 +44,8 @@ public class AnswerServiceImp implements AnswerService {
         }
         Voice voice = saveVoiceFrom(file);
         Answer answer = linkAndSaveToAnswer(voice, matchedQuestion);
+        Analysis findAnalysis = analysisRepository.findById(analysisId).orElseThrow(AnalysisNotFoundException::new);
+        answer.connectAnalysis(findAnalysis);
 
         return AnswerCreateResponseDto.builder()
                 .answerId(answer.getId())

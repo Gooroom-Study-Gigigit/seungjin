@@ -287,9 +287,9 @@ public class AnalysisServiceImp implements AnalysisService {
         return list.size() == 0 ? true : false;
     }
 
-    @Transactional
+ /*   @Transactional
     @Override
-    public void removeAnalysis(Long analysisId) {
+    public void removeAnalysis2(Long analysisId) {
         // anlaysis와 관련된 answer의 voice에 해당하는 S3 파일 삭제 로직
         Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(AnalysisNotFoundException::new);
         log.info("findAnalysis 찾기 종료 ");
@@ -311,10 +311,16 @@ public class AnalysisServiceImp implements AnalysisService {
         log.info("answers 관련된 voice 객체 삭제 종료");
 
         analysisRepository.deleteById(analysisId); // analysis 삭제로 question, answer 삭제 로직 -> voiceService.deleteVoices로 answer.voice와 관련 S3 파일은 이미 삭제.
-        log.info("analysis 삭제 종료");
-        /**
-         *
-         */
+        log.info("analysis 삭제 종료");*/
+
+    @Transactional
+    @Override
+    public void removeAnalysis(Long analysisId) {
+
+        // s3 객체 삭제 -> voice 객체 벌크 삭제
+        // answer 객체 벌크 삭제
+        // question 객체 벌크 삭제
+        // analysis 객체 삭제
     }
 
 

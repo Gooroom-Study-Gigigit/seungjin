@@ -67,12 +67,12 @@ public class AnalysisServiceImp implements AnalysisService {
 
         Map<QuestionContent, Voice> voicesMap = generateVoicesMapFor(questions);
 
+        analysisRepository.save(analysis);
+
         List<String> accessUrls = new ArrayList<>();
         List<String> questionTexts = new ArrayList<>();
         List<Long> questionIds = new ArrayList<>();
         linkAnalysisWith(analysis, questions, voicesMap, questionTexts, accessUrls, questionIds);
-
-        analysisRepository.save(analysis);
 
         return AnalysisCreateResponseDto.of(analysis.getId(), questionIds, questionTexts, accessUrls);
     }

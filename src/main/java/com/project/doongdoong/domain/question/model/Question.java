@@ -48,7 +48,7 @@ public class Question extends BaseEntity {
         if(this.analysis != null) {
             return;
         }
-        this.analysis = analysis;
+        this.analysis = analysis; // 양방향 연관관계 메서드를 맺지 않아도 되는 이유 -> 생성자에서 이미 questions 객체를 넣어줌. 이미 완료됨.
     }
 
     public void connectAnswer(Answer answer) {

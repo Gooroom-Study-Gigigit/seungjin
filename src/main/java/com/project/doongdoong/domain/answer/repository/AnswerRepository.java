@@ -16,6 +16,6 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
 
     @Modifying
     @Query("update Answer a set a.voice = null where a.analysis.id = :analysisId")
-    void detachVoiceFromAnswersByAnalysisId(@Param("analysisId") Long analysisId);
+    void detachVoiceFromAnswersBy(@Param("analysisId") Long analysisId);
 
 }

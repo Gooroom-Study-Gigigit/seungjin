@@ -320,20 +320,20 @@ public class AnalysisServiceImp implements AnalysisService {
     @Transactional
     @Override
     public void removeAnalysis(Long analysisId) {
-        Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(AnalysisNotFoundException::new);
+        Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId)
+                .orElseThrow(AnalysisNotFoundException::new);
 
-        answerRepository.detachVoiceFromAnswersByAnalysisId(analysisId);
-        // s3 객체 삭제 -> voice 객체 벌크 삭제
-        voiceService.deleteVoices(findAnalysis.getAnswers().stream()
-                .map(answer -> answer.getVoice()).toList());
-        // question 객체 벌크 삭제
+        answerRepository.detachVoiceFromAnswersBy(analysisId);
+
+        voiceService.deleteVoices(getVoiceListFrom(findAnalysis));
         questionRepository.deleteQuestionsById(analysisId);
-
-        // answer 객체 벌크 삭제
         answerRepository.deleteAnswersById(analysisId);
-
-        // analysis 객체 삭제
         analysisRepository.deleteAnalysis(analysisId);
+    }
+
+    private static List<Voice> getVoiceListFrom(Analysis findAnalysis) {
+        return findAnalysis.getAnswers().stream()
+                .map(Answer::getVoice).toList();
     }
 
 

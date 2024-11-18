@@ -7,6 +7,7 @@ import com.project.doongdoong.domain.user.model.User;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Modifying;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -41,4 +42,8 @@ public interface AnalysisRepository extends JpaRepository<Analysis, Long>, Analy
 
     @Query("select analysis from Analysis analysis left outer join analysis.counsel where analysis.id = :id")
     Optional<Analysis> findAnalysis(Long id);
+
+    @Modifying
+    @Query("delete from Analysis analysis where analysis.id = :id")
+    void deleteAnalysis(Long id);
 }

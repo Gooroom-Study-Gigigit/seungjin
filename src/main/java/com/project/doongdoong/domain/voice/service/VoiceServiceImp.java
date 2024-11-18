@@ -2,6 +2,8 @@ package com.project.doongdoong.domain.voice.service;
 
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3Client;
+import com.amazonaws.services.s3.model.DeleteObjectsRequest;
+import com.amazonaws.services.s3.model.DeleteObjectsResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.project.doongdoong.domain.image.exception.FileDeleteException;
 import com.project.doongdoong.domain.image.exception.FileEmptyException;
@@ -24,6 +26,7 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Service @Slf4j
 @RequiredArgsConstructor
@@ -113,12 +116,39 @@ public class VoiceServiceImp implements VoiceService{
         }
     }
 
-    @Override
+    /*@Override
     @Transactional
     public void deleteVoices(List<String> voiceUrls) {
         for (String voiceUrl : voiceUrls) {
             deleteVoice(voiceUrl);
         }
+
+    }*/
+    @Override
+    @Transactional
+    public void deleteVoices(List<Voice> voices) {
+
+
+        List<Long> voiceIds = voices.stream().map(Voice::getVoiceId).toList();
+        // S3 삭제 키 생성
+        List<DeleteObjectsRequest.KeyVersion> keys = voices.stream()
+                .map(voice -> new DeleteObjectsRequest.KeyVersion(VOICE_KEY + voice.getStoredName()))
+                .toList();
+
+        try {
+            // DeleteObjectsRequest 생성
+            DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest(bucketName)
+                    .withKeys(keys); // 리스트를 직접 전달
+
+            // deleteObjects 호출
+            DeleteObjectsResult result = amazonS3Client.deleteObjects(deleteRequest);
+
+            log.info("삭제된 파일 수: {}", result.getDeletedObjects().size());
+        } catch (SdkClientException e) {
+            log.error("S3 다중 객체 삭제 오류: {}", e.getMessage());
+            throw new RuntimeException("S3 파일 삭제 실패", e);
+        }
+        voiceRepository.deleteVoicesByUrls(voiceIds);
 
     }
 

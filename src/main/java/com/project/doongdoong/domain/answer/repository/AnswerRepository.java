@@ -13,4 +13,9 @@ public interface AnswerRepository extends JpaRepository<Answer, Long> {
     @Modifying(clearAutomatically = true, flushAutomatically = true)
     @Query("delete from Answer answer where answer.analysis.id = :analysisId")
     void deleteAnswersById(@Param("analysisId") Long analysisId);
+
+    @Modifying
+    @Query("update Answer a set a.voice = null where a.analysis.id = :analysisId")
+    void detachVoiceFromAnswersByAnalysisId(@Param("analysisId") Long analysisId);
+
 }

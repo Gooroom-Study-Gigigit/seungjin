@@ -7,8 +7,10 @@ import com.project.doongdoong.domain.analysis.exception.AnalysisNotFoundExceptio
 import com.project.doongdoong.domain.analysis.model.Analysis;
 import com.project.doongdoong.domain.analysis.repository.AnalysisRepository;
 import com.project.doongdoong.domain.answer.model.Answer;
+import com.project.doongdoong.domain.answer.repository.AnswerRepository;
 import com.project.doongdoong.domain.question.model.Question;
 import com.project.doongdoong.domain.question.model.QuestionContent;
+import com.project.doongdoong.domain.question.repository.QuestionRepository;
 import com.project.doongdoong.domain.question.service.QuestionProvidable;
 import com.project.doongdoong.domain.user.exeception.UserNotFoundException;
 import com.project.doongdoong.domain.user.model.SocialType;
@@ -48,6 +50,7 @@ public class AnalysisServiceImp implements AnalysisService {
     private final UserRepository userRepository;
     private final AnalysisRepository analysisRepository;
     private final QuestionProvidable questionProvider;
+    private final QuestionRepository questionRepository;
     private final VoiceService voiceService;
     private final WebClientUtil webClientUtil;
 
@@ -56,6 +59,7 @@ public class AnalysisServiceImp implements AnalysisService {
     private final static double ANALYSIS_TEXT_RATE = 0.35;
     private final static String DEFAULT_NO_ANSWER_MESSAGE = "질문에 대한 답변이 없습니다.";
     private final static String DEFAULT_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm";
+    private final AnswerRepository answerRepository;
 
     @Transactional
     @Override
@@ -316,11 +320,20 @@ public class AnalysisServiceImp implements AnalysisService {
     @Transactional
     @Override
     public void removeAnalysis(Long analysisId) {
+        Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(AnalysisNotFoundException::new);
 
+        answerRepository.detachVoiceFromAnswersByAnalysisId(analysisId);
         // s3 객체 삭제 -> voice 객체 벌크 삭제
-        // answer 객체 벌크 삭제
+        voiceService.deleteVoices(findAnalysis.getAnswers().stream()
+                .map(answer -> answer.getVoice()).toList());
         // question 객체 벌크 삭제
+        questionRepository.deleteQuestionsById(analysisId);
+
+        // answer 객체 벌크 삭제
+        answerRepository.deleteAnswersById(analysisId);
+
         // analysis 객체 삭제
+        analysisRepository.deleteAnalysis(analysisId);
     }
 
 

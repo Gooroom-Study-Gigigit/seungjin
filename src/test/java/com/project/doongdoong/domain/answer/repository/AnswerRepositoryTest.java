@@ -52,7 +52,7 @@ class AnswerRepositoryTest extends IntegrationSupportTest {
                 .containsExactly("답변 5입니다.");
     }
 
-    private static Answer createAnswer(String content) {
+    private Answer createAnswer(String content) {
         return Answer.builder()
                 .content(content)
                 .build();

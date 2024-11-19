@@ -39,8 +39,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import static com.project.doongdoong.domain.answer.service.AnswerServiceImp.MAX_ANSWER_COUNT;
-
 @Service
 @Slf4j
 @RequiredArgsConstructor
@@ -82,40 +80,6 @@ public class AnalysisServiceImp implements AnalysisService {
         return AnalysisCreateResponseDto.of(analysis.getId(), questionIds, questionTexts, accessUrls);
     }
 
-    private void linkAnalysisWith(Analysis analysis, List<Question> questions, Map<QuestionContent, Voice> voicesMap, List<String> questionTexts, List<String> accessUrls, List<Long> questionIds) {
-        questions.forEach(question -> {
-            question.connectAnalysis(analysis); // 연관관계 설정
-            Voice voice = Optional.ofNullable(voicesMap.get(question.getQuestionContent()))
-                    .orElseThrow(VoiceNotFoundException::new);
-
-            questionTexts.add(question.getQuestionContent().getText());
-            questionIds.add(question.getId());
-            accessUrls.add(voice.getAccessUrl());
-
-        });
-    }
-
-    private Map<QuestionContent, Voice> generateVoicesMapFor(List<Question> questions) {
-        List<QuestionContent> questionContents = questions.stream()
-                .map(Question::getQuestionContent)
-                .collect(Collectors.toList());
-
-        return voiceRepository.findVoiceAllByQuestionContentIn(questionContents)
-                .stream()
-                .collect(Collectors.toMap(Voice::getQuestionContent, voice -> voice));
-    }
-
-    private User findUserBy(String uniqueValue) {
-        String[] values = parseUniqueValue(uniqueValue); // 사용자 정보 찾기
-
-        return userRepository.findBySocialTypeAndSocialId(SocialType.customValueOf(values[1]), values[0])
-                .orElseThrow(UserNotFoundException::new);
-    }
-
-    private String[] parseUniqueValue(String uniqueValue) {
-        return uniqueValue.split("_"); // 사용자 찾기
-    }
-
     @Override
     public AnalysisDetailResponse getAnalysis(Long analysisId) {
         Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(AnalysisNotFoundException::new);
@@ -134,47 +98,6 @@ public class AnalysisServiceImp implements AnalysisService {
 
         return AnalysisDetailResponse.of(analysisId, findAnalysis.getFeelingState(), findAnalysis.getCreatedTime().format(DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT)),
                 questionTexts, questionIds, questionVoiceAccessUrls, answerContents);
-    }
-
-    private List<String> findAnswerConetentsByMatchingQuestionWithAnswer(List<Question> questions) {
-        return questions.stream()
-                .map(question ->
-                        Optional.ofNullable(question.getAnswer())
-                                .map(Answer::getContent)
-                                .orElse(DEFAULT_NO_ANSWER_MESSAGE))
-                .collect(Collectors.toList());
-    }
-
-    private List<String> findUrlsByMatchingQuestionContentsWithVoice(List<QuestionContent> questionContents, Map<QuestionContent, String> voiceMap) {
-        return questionContents.stream()
-                .map(voiceMap::get)
-                .collect(Collectors.toList());
-    }
-
-    private List<Long> extractQuestionIdBy(List<Question> questions) {
-        return questions.stream()
-                .map(Question::getId).collect(Collectors.toList());
-    }
-
-    private Map<QuestionContent, String> mapVoiceToQuestionInformation(List<Voice> findVoices) {
-        return findVoices.stream()
-                .collect(Collectors.toMap(
-                        Voice::getQuestionContent,
-                        Voice::getAccessUrl,
-                        (existing, replacement) -> existing
-                ));
-    }
-
-    private List<String> extractQuestionTextBy(List<QuestionContent> questionContents) {
-        return questionContents.stream()
-                .map(QuestionContent::getText)
-                .collect(Collectors.toList());
-    }
-
-    private List<QuestionContent> extractQuestionContentsBy(List<Question> questions) {
-        return questions.stream()
-                .map(Question::getQuestionContent)
-                .collect(Collectors.toList());
     }
 
     @Override
@@ -225,50 +148,7 @@ public class AnalysisServiceImp implements AnalysisService {
                 .build();
     }
 
-    /*@Transactional
-    @Override
-    public FellingStateCreateResponse analyzeEmotion(Long analysisId, String uniqueValue) {
-        String[] values = parseUniqueValue(uniqueValue);
 
-        LocalDateTime now = LocalDate.now().atStartOfDay();
-        log.info("now = {}", now);
-        User user = userRepository.findBySocialTypeAndSocialIdWithAnalysisToday(SocialType.customValueOf(values[1]), values[0], now)
-                .orElseThrow(() -> new UserNotFoundException());
-
-        if (checkFirstGrowthToday(user)) {
-            user.growUp();
-        }
-
-        Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(() -> new AnalysisNotFoundException());
-        List<Voice> voices = findAnalysis.getAnswers().stream() // 1. 분석에 대한 답변 매칭 파일 리스트 가져오기
-                .map(answer -> answer.getVoice())
-                .collect(Collectors.toList());
-
-        if (isAllAnswerdBy(voices)) { //만약 모든 질문에 대한 답변이 없는 경우, 답변이 부족하다는 예외 발생
-            throw new AllAnswersNotFoundException();
-        }
-        if (isAlreadyAnalyzed(findAnalysis)) { // 분석은 1번만 가능
-            throw new AlreadyAnalyzedException();
-        }
-
-        List<FellingStateCreateResponse> responseByText = webClientUtil.callAnalyzeEmotion(voices); // 2. 파일을 request 값으로 외부 lambda API 비동기 처리(동일한 외부 API 4번 호출)
-        List<FellingStateCreateResponse> responseByVoice = webClientUtil.callAnalyzeEmotionVoice(voices);
-
-        List<Answer> answers = findAnalysis.getAnswers();
-        for (int i = 0; i < responseByText.size(); i++) {
-            answers.get(i).changeContent(responseByText.get(i).getTranscribedText());
-        }
-
-        double resultByText = caluateFellingStatusAverage(responseByText);
-        double resultByVoice = caluateFellingStatusAverage(responseByVoice);
-        double result = ANALYSIS_TEXT_RATE * resultByText + ANALYSIS_VOICE_RATE * resultByVoice;
-
-        findAnalysis.changeFeelingStateAndAnalyzeTime(result, LocalDate.now());
-
-        return FellingStateCreateResponse.builder()
-                .feelingState(result)
-                .build();
-    }*/
     @Transactional
     @Override
     public FellingStateCreateResponse analyzeEmotion(Long analysisId, String uniqueValue) {
@@ -306,70 +186,6 @@ public class AnalysisServiceImp implements AnalysisService {
                 .build();
     }
 
-    private List<Answer> getAnswersFrom(Analysis findAnalysis) {
-        return findAnalysis.getAnswers();
-    }
-
-    private void updateContentWithTranscribedTextBy(List<Answer> answers, List<FellingStateCreateResponse> responseByText) {
-        if(answers.size() == responseByText.size()) {
-            throw new ExternalApiCallException();
-        }
-        for (int i = 0; i < responseByText.size(); i++) {
-            answers.get(i).changeContent(responseByText.get(i).getTranscribedText());
-        }
-    }
-
-    private double calculateTotalEmotionScoreFrom(double resultByText, double resultByVoice) {
-        return ANALYSIS_TEXT_RATE * resultByText + ANALYSIS_VOICE_RATE * resultByVoice;
-    }
-
-    private List<Voice> getAnswerListFromAnalysisBy(Analysis findAnalysis) {
-        return findAnalysis.getAnswers().stream() // 1. 분석에 대한 답변 매칭 파일 리스트 가져오기
-                .map(Answer::getVoice)
-                .collect(Collectors.toList());
-    }
-
-    private User findUserBy(String uniqueValue, LocalDateTime time) {
-        String[] values = parseUniqueValue(uniqueValue); // 사용자 정보 찾기
-
-        return userRepository.findUserWithAnalysisBySocialTypeAndSocialIdSinceTime(SocialType.customValueOf(values[1]), values[0], time)
-                .orElseThrow(UserNotFoundException::new);
-    }
-
-    /*private double calculateFellingStatusAverage(List<FellingStateCreateResponse> responseByText) {
-        return responseByText.stream() // 3. 처리가 끝나면 double값 4개 값을 평균 내서 감정 수치 값 반환하기
-                .mapToDouble(FellingStateCreateResponse::getFeelingState)
-                .average()
-                .getAsDouble();
-    }*/
-    private double calculateFellingStatusAverage(List<FellingStateCreateResponse> responseByText) {
-        return responseByText.stream()
-                .mapToDouble(FellingStateCreateResponse::getFeelingState)
-                .average()
-                .orElseThrow(ExternalApiCallException::new);
-    }
-
-    private boolean isAllAnswerBy(List<Voice> voices) {
-        return voices.size() != MAX_ANSWER_COUNT;
-    }
-
-    private boolean isAlreadyAnalyzed(Analysis findAnalysis) {
-        return findAnalysis.getAnalyzeTime() != null ? true : false;
-    }
-
-    /*private boolean checkToAnalyzeTodayFirstBy(User user) {
-        List<Analysis> list = user.getAnalysisList().stream()
-                .filter(analysis -> LocalDate.now().equals(analysis.getAnalyzeTime()))
-                .toList();
-        return list.isEmpty();
-    }*/
-    private boolean checkToAnalyzeTodayFirstBy(User user) {
-        List<Analysis> list = user.getAnalysisList().stream()
-                .filter(analysis -> analysis.equalsAnalyzeTimeTo(LocalDate.now()))
-                .toList();
-        return list.isEmpty();
-    }
-
     @Transactional
     @Override
     public void removeAnalysis(Long analysisId) {
@@ -383,6 +199,122 @@ public class AnalysisServiceImp implements AnalysisService {
         answerRepository.deleteAnswersById(analysisId);
         analysisRepository.deleteAnalysis(analysisId);
     }
+
+    private void linkAnalysisWith(Analysis analysis, List<Question> questions, Map<QuestionContent, Voice> voicesMap, List<String> questionTexts, List<String> accessUrls, List<Long> questionIds) {
+        questions.forEach(question -> {
+            question.connectAnalysis(analysis);
+            Voice voice = Optional.ofNullable(voicesMap.get(question.getQuestionContent()))
+                    .orElseThrow(VoiceNotFoundException::new);
+
+            questionTexts.add(question.getQuestionContent().getText());
+            questionIds.add(question.getId());
+            accessUrls.add(voice.getAccessUrl());
+
+        });
+    }
+
+    private Map<QuestionContent, Voice> generateVoicesMapFor(List<Question> questions) {
+        List<QuestionContent> questionContents = questions.stream()
+                .map(Question::getQuestionContent)
+                .collect(Collectors.toList());
+
+        return voiceRepository.findVoiceAllByQuestionContentIn(questionContents)
+                .stream()
+                .collect(Collectors.toMap(Voice::getQuestionContent, voice -> voice));
+    }
+
+    private User findUserBy(String uniqueValue) {
+        String[] values = parseUniqueValue(uniqueValue);
+
+        return userRepository.findBySocialTypeAndSocialId(SocialType.customValueOf(values[1]), values[0])
+                .orElseThrow(UserNotFoundException::new);
+    }
+
+    private String[] parseUniqueValue(String uniqueValue) {
+        return uniqueValue.split("_");
+    }
+
+    private List<String> findAnswerConetentsByMatchingQuestionWithAnswer(List<Question> questions) {
+        return questions.stream()
+                .map(question ->
+                        Optional.ofNullable(question.getAnswer())
+                                .map(Answer::getContent)
+                                .orElse(DEFAULT_NO_ANSWER_MESSAGE))
+                .collect(Collectors.toList());
+    }
+
+    private List<String> findUrlsByMatchingQuestionContentsWithVoice(List<QuestionContent> questionContents, Map<QuestionContent, String> voiceMap) {
+        return questionContents.stream()
+                .map(voiceMap::get)
+                .collect(Collectors.toList());
+    }
+
+    private List<Long> extractQuestionIdBy(List<Question> questions) {
+        return questions.stream()
+                .map(Question::getId).collect(Collectors.toList());
+    }
+
+    private Map<QuestionContent, String> mapVoiceToQuestionInformation(List<Voice> findVoices) {
+        return findVoices.stream()
+                .collect(Collectors.toMap(
+                        Voice::getQuestionContent,
+                        Voice::getAccessUrl,
+                        (existing, replacement) -> existing
+                ));
+    }
+
+    private List<String> extractQuestionTextBy(List<QuestionContent> questionContents) {
+        return questionContents.stream()
+                .map(QuestionContent::getText)
+                .collect(Collectors.toList());
+    }
+
+    private List<QuestionContent> extractQuestionContentsBy(List<Question> questions) {
+        return questions.stream()
+                .map(Question::getQuestionContent)
+                .collect(Collectors.toList());
+    }
+
+
+    private List<Answer> getAnswersFrom(Analysis findAnalysis) {
+        return findAnalysis.getAnswers();
+    }
+
+    private void updateContentWithTranscribedTextBy(List<Answer> answers, List<FellingStateCreateResponse> responseByText) {
+        if (answers.size() == responseByText.size()) {
+            throw new ExternalApiCallException();
+        }
+        for (int i = 0; i < responseByText.size(); i++) {
+            answers.get(i).changeContent(responseByText.get(i).getTranscribedText());
+        }
+    }
+
+    private double calculateTotalEmotionScoreFrom(double resultByText, double resultByVoice) {
+        return ANALYSIS_TEXT_RATE * resultByText + ANALYSIS_VOICE_RATE * resultByVoice;
+    }
+
+
+    private User findUserBy(String uniqueValue, LocalDateTime time) {
+        String[] values = parseUniqueValue(uniqueValue); // 사용자 정보 찾기
+
+        return userRepository.findUserWithAnalysisBySocialTypeAndSocialIdSinceTime(SocialType.customValueOf(values[1]), values[0], time)
+                .orElseThrow(UserNotFoundException::new);
+    }
+
+    private double calculateFellingStatusAverage(List<FellingStateCreateResponse> responseByText) {
+        return responseByText.stream()
+                .mapToDouble(FellingStateCreateResponse::getFeelingState)
+                .average()
+                .orElseThrow(ExternalApiCallException::new);
+    }
+
+    private boolean checkToAnalyzeTodayFirstBy(User user) {
+        List<Analysis> list = user.getAnalysisList().stream()
+                .filter(analysis -> analysis.equalsAnalyzeTimeTo(LocalDate.now()))
+                .toList();
+        return list.isEmpty();
+    }
+
 
     private List<Voice> getVoiceListFrom(Analysis findAnalysis) {
         return findAnalysis.getAnswers().stream()

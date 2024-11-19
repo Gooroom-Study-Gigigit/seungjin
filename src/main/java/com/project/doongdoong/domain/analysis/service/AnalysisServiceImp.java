@@ -107,7 +107,7 @@ public class AnalysisServiceImp implements AnalysisService {
     private User findUserBy(String uniqueValue) {
         String[] values = parseUniqueValue(uniqueValue); // 사용자 정보 찾기
 
-        return  userRepository.findBySocialTypeAndSocialId(SocialType.customValueOf(values[1]), values[0])
+        return userRepository.findBySocialTypeAndSocialId(SocialType.customValueOf(values[1]), values[0])
                 .orElseThrow(UserNotFoundException::new);
     }
 
@@ -117,7 +117,7 @@ public class AnalysisServiceImp implements AnalysisService {
 
     @Override
     public AnalysisDetailResponse getAnalysis(Long analysisId) {
-        Analysis findAnalysis = analysisRepository.searchFullAnalysisBy(analysisId).orElseThrow(AnalysisNotFoundException::new);
+        Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(AnalysisNotFoundException::new);
 
         List<Question> questions = findAnalysis.getQuestions();
         List<QuestionContent> questionContents = extractQuestionContentsBy(questions);
@@ -139,8 +139,8 @@ public class AnalysisServiceImp implements AnalysisService {
         return questions.stream()
                 .map(question ->
                         Optional.ofNullable(question.getAnswer())
-                        .map(Answer::getContent)
-                        .orElse(DEFAULT_NO_ANSWER_MESSAGE))
+                                .map(Answer::getContent)
+                                .orElse(DEFAULT_NO_ANSWER_MESSAGE))
                 .collect(Collectors.toList());
     }
 
@@ -224,7 +224,7 @@ public class AnalysisServiceImp implements AnalysisService {
                 .build();
     }
 
-    @Transactional
+    /*@Transactional
     @Override
     public FellingStateCreateResponse analyzeEmotion(Long analysisId, String uniqueValue) {
         String[] values = parseUniqueValue(uniqueValue);
@@ -267,6 +267,59 @@ public class AnalysisServiceImp implements AnalysisService {
         return FellingStateCreateResponse.builder()
                 .feelingState(result)
                 .build();
+    }*/
+    @Transactional
+    @Override
+    public FellingStateCreateResponse analyzeEmotion(Long analysisId, String uniqueValue) {
+        // 사용자 찾기
+        User user = findUserBy(uniqueValue, LocalDate.now().atStartOfDay());
+        // 오늘
+        if (checkToAnalyzeTodayFirstBy(user)) {
+            user.growUp();
+        }
+
+        Analysis findAnalysis = analysisRepository.searchFullAnalysisBy(analysisId).orElseThrow(AnalysisNotFoundException::new);
+        if (findAnalysis.hasAllAnswer()) { //만약 모든 질문에 대한 답변이 없는 경우, 답변이 부족하다는 예외 발생
+            throw new AllAnswersNotFoundException();
+        }
+
+        if (findAnalysis.isAlreadyAnalyzed()) { // 분석은 1번만 가능
+            throw new AlreadyAnalyzedException();
+        }
+
+        List<Voice> voices = findAnalysis.getAnswers().stream()
+                .map(Answer::getVoice)
+                .toList();
+        List<FellingStateCreateResponse> responseByText = webClientUtil.callAnalyzeEmotion(voices); // 2. 파일을 request 값으로 외부 lambda API 비동기 처리(동일한 외부 API 4번 호출)
+        List<FellingStateCreateResponse> responseByVoice = webClientUtil.callAnalyzeEmotionVoice(voices);
+
+        List<Answer> answers = findAnalysis.getAnswers();
+        for (int i = 0; i < responseByText.size(); i++) {
+            answers.get(i).changeContent(responseByText.get(i).getTranscribedText());
+        }
+
+        double resultByText = caluateFellingStatusAverage(responseByText);
+        double resultByVoice = caluateFellingStatusAverage(responseByVoice);
+        double result = ANALYSIS_TEXT_RATE * resultByText + ANALYSIS_VOICE_RATE * resultByVoice;
+
+        findAnalysis.changeFeelingStateAndAnalyzeTime(result, LocalDate.now());
+
+        return FellingStateCreateResponse.builder()
+                .feelingState(result)
+                .build();
+    }
+
+    private List<Voice> getAnswerListFromAnalysisBy(Analysis findAnalysis) {
+        return findAnalysis.getAnswers().stream() // 1. 분석에 대한 답변 매칭 파일 리스트 가져오기
+                .map(Answer::getVoice)
+                .collect(Collectors.toList());
+    }
+
+    private User findUserBy(String uniqueValue, LocalDateTime time) {
+        String[] values = parseUniqueValue(uniqueValue); // 사용자 정보 찾기
+
+        return userRepository.findUserWithAnalysisBySocialTypeAndSocialIdSinceTime(SocialType.customValueOf(values[1]), values[0], time)
+                .orElseThrow(UserNotFoundException::new);
     }
 
     private double caluateFellingStatusAverage(List<FellingStateCreateResponse> responseByText) {
@@ -276,7 +329,7 @@ public class AnalysisServiceImp implements AnalysisService {
                 .getAsDouble();
     }
 
-    private boolean isAllAnswerdBy(List<Voice> voices) {
+    private boolean isAllAnswerBy(List<Voice> voices) {
         return voices.size() != MAX_ANSWER_COUNT;
     }
 
@@ -284,43 +337,23 @@ public class AnalysisServiceImp implements AnalysisService {
         return findAnalysis.getAnalyzeTime() != null ? true : false;
     }
 
-    private boolean checkFirstGrowthToday(User user) {
+    /*private boolean checkToAnalyzeTodayFirstBy(User user) {
         List<Analysis> list = user.getAnalysisList().stream()
                 .filter(analysis -> LocalDate.now().equals(analysis.getAnalyzeTime()))
-                .collect(Collectors.toList());
-        return list.size() == 0 ? true : false;
+                .toList();
+        return list.isEmpty();
+    }*/
+    private boolean checkToAnalyzeTodayFirstBy(User user) {
+        List<Analysis> list = user.getAnalysisList().stream()
+                .filter(analysis -> analysis.equalsAnalyzeTimeTo(LocalDate.now()))
+                .toList();
+        return list.isEmpty();
     }
-
- /*   @Transactional
-    @Override
-    public void removeAnalysis2(Long analysisId) {
-        // anlaysis와 관련된 answer의 voice에 해당하는 S3 파일 삭제 로직
-        Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId).orElseThrow(AnalysisNotFoundException::new);
-        log.info("findAnalysis 찾기 종료 ");
-        List<String> accessUrls = findAnalysis.getAnswers().stream()
-                .map(answer -> answer.getVoice().getAccessUrl())
-                .collect(Collectors.toList());
-        List<Answer> answers = findAnalysis.getAnswers();
-        log.info("answer size = {}", answers.size()); int i=0;
-        for(String url : accessUrls) {
-
-            log.info("answer = {}", answers.get(i++));
-            log.info("url= {}", url);
-        }
-        log.info("accessUrls 찾기 종료");
-        if (findAnalysis.getAnswers().size() != 0) {
-            findAnalysis.getAnswers().stream().forEach(answer -> answer.disconnectWithVoice()); // 연관관계 끊기
-            voiceService.deleteVoices(accessUrls); // voice를 참조하는 객체 없으므로 삭제 가능 -> 벌크 삭제로 쿼리 최적화 필요
-        }
-        log.info("answers 관련된 voice 객체 삭제 종료");
-
-        analysisRepository.deleteById(analysisId); // analysis 삭제로 question, answer 삭제 로직 -> voiceService.deleteVoices로 answer.voice와 관련 S3 파일은 이미 삭제.
-        log.info("analysis 삭제 종료");*/
 
     @Transactional
     @Override
     public void removeAnalysis(Long analysisId) {
-        Analysis findAnalysis = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysisId)
+        Analysis findAnalysis = analysisRepository.searchFullAnalysisBy(analysisId)
                 .orElseThrow(AnalysisNotFoundException::new);
 
         answerRepository.detachVoiceFromAnswersBy(analysisId);

@@ -45,6 +45,8 @@ public class Analysis extends BaseEntity {
     @OneToOne(fetch = LAZY, mappedBy = "analysis")
     private Counsel counsel;
 
+    private static final int MAX_ANSWER_COUNT = 4;
+
     public static Analysis of(User user, List<Question> questions){
         return Analysis.builder()
                 .user(user)
@@ -59,10 +61,24 @@ public class Analysis extends BaseEntity {
         this.user = user;
     }
 
+    public boolean hasAllAnswer() {
+        return this.answers.size() == MAX_ANSWER_COUNT;
+    }
+
 
     public void changeFeelingStateAndAnalyzeTime(double feelingState, LocalDate analyzeTime){
         this.feelingState = feelingState;
         this.analyzeTime = analyzeTime;
     }
 
+    public boolean equalsAnalyzeTimeTo(LocalDate time){
+        if(this.analyzeTime == null || time == null){
+            return false;
+        }
+        return time.equals(this.analyzeTime);
+    }
+
+    public boolean isAlreadyAnalyzed() {
+        return this.analyzeTime != null ;
+    }
 }

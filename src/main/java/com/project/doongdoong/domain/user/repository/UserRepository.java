@@ -17,6 +17,6 @@ public interface UserRepository extends JpaRepository<User, Long> {
 
     @Query("select u from User u left join u.analysisList al on al.createdTime >= :date left join al.answers an " +
             "where u.socialType = :socialType and u.socialId = :socialId")
-    Optional<User> findBySocialTypeAndSocialIdWithAnalysisToday(@Param("socialType") SocialType socialType
-            ,@Param("socialId") String socialId,@Param("date") LocalDateTime date);
+    Optional<User> findUserWithAnalysisBySocialTypeAndSocialIdSinceTime(@Param("socialType") SocialType socialType
+            , @Param("socialId") String socialId, @Param("date") LocalDateTime date);
 }

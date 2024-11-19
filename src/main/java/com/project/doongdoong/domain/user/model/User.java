@@ -63,9 +63,9 @@ public class User extends BaseEntity {
         checkGrowth();
     }
 
-    public void checkGrowth(){
+    private void checkGrowth(){
         if(getEmotionGrowth() == 101L)
-        this.emotionGrowth %= 101;
+            this.emotionGrowth %= 101;
     }
 
 }

@@ -21,7 +21,7 @@ public class AnalysisRepositoryImpl implements AnalysisRepositoryCustom {
     }
 
     @Override
-    public Optional<Analysis> searchAnalysisWithVoiceOfAnswer(Long analysisId) {
+    public Optional<Analysis> searchFullAnalysisBy(Long analysisId) {
 
         return Optional.ofNullable(
                 queryFactory
@@ -35,7 +35,7 @@ public class AnalysisRepositoryImpl implements AnalysisRepositoryCustom {
     }
 
     @Override
-    public Optional<Analysis> searchFullAnalysisBy(Long analysisId) {
+    public Optional<Analysis> searchAnalysisWithVoiceOfAnswer(Long analysisId) {
 
         return Optional.ofNullable(
                 queryFactory.selectFrom(analysis)

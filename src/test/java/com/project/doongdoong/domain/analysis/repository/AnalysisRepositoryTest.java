@@ -14,7 +14,6 @@ import com.project.doongdoong.domain.user.model.User;
 import com.project.doongdoong.domain.user.repository.UserRepository;
 import com.project.doongdoong.domain.voice.model.Voice;
 import com.project.doongdoong.domain.voice.repository.VoiceRepository;
-import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -240,7 +239,7 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
         analysisRepository.save(analysis);
 
         //when
-        Optional<Analysis> result = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysis.getId());
+        Optional<Analysis> result = analysisRepository.searchFullAnalysisBy(analysis.getId());
 
         //then
         Analysis findAnalysis = result.get();
@@ -308,7 +307,7 @@ class AnalysisRepositoryTest extends IntegrationSupportTest {
         analysisRepository.save(analysis);
 
         // when
-        Optional<Analysis> result = analysisRepository.searchFullAnalysisBy(analysis.getId());
+        Optional<Analysis> result = analysisRepository.searchAnalysisWithVoiceOfAnswer(analysis.getId());
 
         // then
         assertThat(result).isPresent();

@@ -20,6 +20,7 @@ import com.project.doongdoong.domain.voice.exception.VoiceNotFoundException;
 import com.project.doongdoong.domain.voice.model.Voice;
 import com.project.doongdoong.domain.voice.repository.VoiceRepository;
 import com.project.doongdoong.domain.voice.service.VoiceService;
+import com.project.doongdoong.global.exception.servererror.ExternalApiCallException;
 import com.project.doongdoong.global.util.WebClientUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -287,26 +288,39 @@ public class AnalysisServiceImp implements AnalysisService {
             throw new AlreadyAnalyzedException();
         }
 
-        List<Voice> voices = findAnalysis.getAnswers().stream()
-                .map(Answer::getVoice)
-                .toList();
+        List<Voice> voices = getVoiceListFrom(findAnalysis);
         List<FellingStateCreateResponse> responseByText = webClientUtil.callAnalyzeEmotion(voices); // 2. 파일을 request 값으로 외부 lambda API 비동기 처리(동일한 외부 API 4번 호출)
         List<FellingStateCreateResponse> responseByVoice = webClientUtil.callAnalyzeEmotionVoice(voices);
 
-        List<Answer> answers = findAnalysis.getAnswers();
-        for (int i = 0; i < responseByText.size(); i++) {
-            answers.get(i).changeContent(responseByText.get(i).getTranscribedText());
-        }
+        List<Answer> answers = getAnswersFrom(findAnalysis);
+        updateContentWithTranscribedTextBy(answers, responseByText);
 
-        double resultByText = caluateFellingStatusAverage(responseByText);
-        double resultByVoice = caluateFellingStatusAverage(responseByVoice);
-        double result = ANALYSIS_TEXT_RATE * resultByText + ANALYSIS_VOICE_RATE * resultByVoice;
+        double resultByText = calculateFellingStatusAverage(responseByText);
+        double resultByVoice = calculateFellingStatusAverage(responseByVoice);
+        double result = calculateTotalEmotionScoreFrom(resultByText, resultByVoice);
 
         findAnalysis.changeFeelingStateAndAnalyzeTime(result, LocalDate.now());
 
         return FellingStateCreateResponse.builder()
                 .feelingState(result)
                 .build();
+    }
+
+    private List<Answer> getAnswersFrom(Analysis findAnalysis) {
+        return findAnalysis.getAnswers();
+    }
+
+    private void updateContentWithTranscribedTextBy(List<Answer> answers, List<FellingStateCreateResponse> responseByText) {
+        if(answers.size() == responseByText.size()) {
+            throw new ExternalApiCallException();
+        }
+        for (int i = 0; i < responseByText.size(); i++) {
+            answers.get(i).changeContent(responseByText.get(i).getTranscribedText());
+        }
+    }
+
+    private double calculateTotalEmotionScoreFrom(double resultByText, double resultByVoice) {
+        return ANALYSIS_TEXT_RATE * resultByText + ANALYSIS_VOICE_RATE * resultByVoice;
     }
 
     private List<Voice> getAnswerListFromAnalysisBy(Analysis findAnalysis) {
@@ -322,11 +336,17 @@ public class AnalysisServiceImp implements AnalysisService {
                 .orElseThrow(UserNotFoundException::new);
     }
 
-    private double caluateFellingStatusAverage(List<FellingStateCreateResponse> responseByText) {
+    /*private double calculateFellingStatusAverage(List<FellingStateCreateResponse> responseByText) {
         return responseByText.stream() // 3. 처리가 끝나면 double값 4개 값을 평균 내서 감정 수치 값 반환하기
-                .mapToDouble(value -> value.getFeelingState())
+                .mapToDouble(FellingStateCreateResponse::getFeelingState)
                 .average()
                 .getAsDouble();
+    }*/
+    private double calculateFellingStatusAverage(List<FellingStateCreateResponse> responseByText) {
+        return responseByText.stream()
+                .mapToDouble(FellingStateCreateResponse::getFeelingState)
+                .average()
+                .orElseThrow(ExternalApiCallException::new);
     }
 
     private boolean isAllAnswerBy(List<Voice> voices) {
@@ -364,7 +384,7 @@ public class AnalysisServiceImp implements AnalysisService {
         analysisRepository.deleteAnalysis(analysisId);
     }
 
-    private static List<Voice> getVoiceListFrom(Analysis findAnalysis) {
+    private List<Voice> getVoiceListFrom(Analysis findAnalysis) {
         return findAnalysis.getAnswers().stream()
                 .map(Answer::getVoice).toList();
     }

@@ -3,13 +3,13 @@ package com.project.doongdoong.domain.voice.service;
 import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
-import com.amazonaws.services.s3.model.DeleteObjectsResult;
 import com.amazonaws.services.s3.model.ObjectMetadata;
 import com.project.doongdoong.domain.image.exception.FileDeleteException;
 import com.project.doongdoong.domain.image.exception.FileEmptyException;
 import com.project.doongdoong.domain.image.exception.FileUploadException;
 import com.project.doongdoong.domain.question.model.QuestionContent;
 import com.project.doongdoong.domain.voice.exception.VoiceNotFoundException;
+import com.project.doongdoong.global.exception.servererror.ExternalApiCallException;
 import org.apache.commons.io.FilenameUtils;
 import com.project.doongdoong.domain.voice.dto.request.VoiceSaveRequestDto;
 import com.project.doongdoong.domain.voice.dto.response.VoiceDetailResponseDto;
@@ -26,7 +26,6 @@ import org.springframework.web.multipart.MultipartFile;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service @Slf4j
 @RequiredArgsConstructor
@@ -58,7 +57,7 @@ public class VoiceServiceImp implements VoiceService{
     public VoiceDetailResponseDto saveVoice(MultipartFile multipartFile) {
         String originalName = multipartFile.getOriginalFilename();
         Voice voice = new Voice(originalName);
-        String filename = VOICE_KEY + voice.getStoredName();
+        String filename = getObjectKeyFrom(voice);
 
         log.info("음성 파일 저장 시작");
         try {
@@ -101,14 +100,13 @@ public class VoiceServiceImp implements VoiceService{
         Voice voice = voiceRepository.findByAccessUrl(imageUrl).orElseThrow(() -> new VoiceNotFoundException());
         try{
             voiceRepository.delete(voice);
-            String filename = VOICE_KEY + voice.getStoredName();
+            String filename = getObjectKeyFrom(voice);
             boolean isObjectExist = amazonS3Client.doesObjectExist(bucketName, filename);
             if (isObjectExist) {
                 amazonS3Client.deleteObject(bucketName, filename);
             } else {
                 log.info("s3 파일이 존재하지 않습니다.");
             }
-            amazonS3Client.deleteObject(bucketName, filename);
         }
         catch(SdkClientException e) {
             log.error("음성 파일 삭제 오류 -> {}", e.getMessage());
@@ -116,47 +114,49 @@ public class VoiceServiceImp implements VoiceService{
         }
     }
 
-    /*@Override
-    @Transactional
-    public void deleteVoices(List<String> voiceUrls) {
-        for (String voiceUrl : voiceUrls) {
-            deleteVoice(voiceUrl);
-        }
-
-    }*/
     @Override
     @Transactional
     public void deleteVoices(List<Voice> voices) {
 
+        List<Long> voiceIds = getIdsFrom(voices);
+        if(voiceIds.isEmpty()){
+            return;
+        }
 
-        List<Long> voiceIds = voices.stream().map(Voice::getVoiceId).toList();
-        // S3 삭제 키 생성
-        List<DeleteObjectsRequest.KeyVersion> keys = voices.stream()
-                .map(voice -> new DeleteObjectsRequest.KeyVersion(VOICE_KEY + voice.getStoredName()))
-                .toList();
+        List<DeleteObjectsRequest.KeyVersion> keys = getRequestFrom(voices);
 
         try {
-            // DeleteObjectsRequest 생성
             DeleteObjectsRequest deleteRequest = new DeleteObjectsRequest(bucketName)
-                    .withKeys(keys); // 리스트를 직접 전달
+                    .withKeys(keys);
+            amazonS3Client.deleteObjects(deleteRequest);
 
-            // deleteObjects 호출
-            DeleteObjectsResult result = amazonS3Client.deleteObjects(deleteRequest);
-
-            log.info("삭제된 파일 수: {}", result.getDeletedObjects().size());
         } catch (SdkClientException e) {
             log.error("S3 다중 객체 삭제 오류: {}", e.getMessage());
-            throw new RuntimeException("S3 파일 삭제 실패", e);
+            throw new ExternalApiCallException("S3 파일 삭제 실패 : " + e.getMessage());
         }
         voiceRepository.deleteVoicesByUrls(voiceIds);
 
+    }
+
+    private List<Long> getIdsFrom(List<Voice> voices) {
+        return voices.stream().map(Voice::getVoiceId).toList();
+    }
+
+    private List<DeleteObjectsRequest.KeyVersion> getRequestFrom(List<Voice> voices) {
+        return voices.stream()
+                .map(voice -> new DeleteObjectsRequest.KeyVersion(getObjectKeyFrom(voice)))
+                .toList();
+    }
+
+    private String getObjectKeyFrom(Voice voice) {
+        return VOICE_KEY + voice.getStoredName();
     }
 
     @Override
     public VoiceDetailResponseDto saveTtsVoice(byte[] audioContent, String originName, QuestionContent questionContent) {
 
         Voice voice = new Voice(originName, questionContent);
-        String filename = VOICE_KEY + voice.getStoredName();
+        String filename = getObjectKeyFrom(voice);
 
         try {
             log.info("TTS 음성 파일 저장 시작");

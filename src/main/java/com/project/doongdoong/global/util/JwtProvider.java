@@ -63,8 +63,10 @@ public class JwtProvider {
     public TokenDto generateToken(String socialId, String socialType, List<String> roles) {
         List<SimpleGrantedAuthority> authorities = roles.stream()
                 .map(SimpleGrantedAuthority::new)
-                .collect(Collectors.toList());
-        String role = authorities.stream().map(GrantedAuthority::getAuthority).collect(Collectors.joining(","));
+                .toList();
+        String role = authorities.stream()
+                .map(GrantedAuthority::getAuthority)
+                .collect(Collectors.joining(","));
 
         // refreshToken과 accessToken을 생성한다.
         String refreshToken = createRefreshToken(socialId, socialType, role);

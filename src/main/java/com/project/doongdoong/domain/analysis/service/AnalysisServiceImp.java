@@ -101,10 +101,8 @@ public class AnalysisServiceImp implements AnalysisService {
     }
 
     @Override
-    public AnaylsisListResponseDto getAnalysisList(String uniqueValue, int pageNumber) {
-        String[] values = parseUniqueValue(uniqueValue);
-        User user = userRepository.findBySocialTypeAndSocialId(SocialType.customValueOf(values[1]), values[0])
-                .orElseThrow(() -> new UserNotFoundException());
+    public AnalysisListResponseDto getAnalysisList(String uniqueValue, int pageNumber) {
+        User user = findUserBy(uniqueValue);
 
         PageRequest pageable = PageRequest.of(pageNumber, ANALYSIS_PAGE_SIZE);
         Page<Analysis> analysisPages = analysisRepository.findAllByUserOrderByCreatedTime(user, pageable);
@@ -112,20 +110,7 @@ public class AnalysisServiceImp implements AnalysisService {
         DateTimeFormatter formatter = DateTimeFormatter.ofPattern(DEFAULT_DATE_TIME_FORMAT);
 
 
-        return AnaylsisListResponseDto.builder()
-                .pageNumber(analysisPages.getNumber() + 1)
-                .totalPage(analysisPages.getTotalPages())
-                .analysisResponseDtoList(analysisPages.getContent().stream()
-                        .map(analysis -> AnaylsisResponseDto.builder()
-                                .analysisId(analysis.getId())
-                                .time(analysis.getCreatedTime().format(formatter))
-                                .feelingState(analysis.getFeelingState())
-                                .questionContent(analysis.getQuestions().stream()
-                                        .map(a -> a.getQuestionContent().getText())
-                                        .collect(Collectors.toList()))
-                                .build())
-                        .collect(Collectors.toList()))
-                .build();
+        return AnalysisListResponseDto.of(analysisPages, formatter);
     }
 
     @Override

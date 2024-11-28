@@ -112,7 +112,7 @@ public class AnalysisControllerTest extends ControllerTestSupport {
                 .questionContent(List.of("질문1", "질문2", "질문3", "질문4"))
                 .build();
 
-        AnaylsisListResponseDto result = AnaylsisListResponseDto.builder()
+        AnalysisListResponseDto result = AnalysisListResponseDto.builder()
                 .pageNumber(1)
                 .totalPage(1)
                 .analysisResponseDtoList(List.of(detailResult))

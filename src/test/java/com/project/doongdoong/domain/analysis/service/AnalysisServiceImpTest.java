@@ -238,7 +238,7 @@ class AnalysisServiceImpTest extends IntegrationSupportTest {
         int pageNumber = 0;
 
         //when
-        AnaylsisListResponseDto response = analysisService.getAnalysisList(uniqueValue, pageNumber);
+        AnalysisListResponseDto response = analysisService.getAnalysisList(uniqueValue, pageNumber);
 
         //then
         assertThat(response)

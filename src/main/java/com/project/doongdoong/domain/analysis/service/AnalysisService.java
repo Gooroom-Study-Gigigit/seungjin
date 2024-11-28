@@ -8,7 +8,7 @@ public interface AnalysisService {
 
     public AnalysisDetailResponse getAnalysis(Long analysisId);
 
-    public AnaylsisListResponseDto getAnalysisList(String uniqueValue, int pageNumber);
+    public AnalysisListResponseDto getAnalysisList(String uniqueValue, int pageNumber);
 
     public FeelingStateResponseListDto getAnalysisListGroupByDay(String uniqueValue);
 

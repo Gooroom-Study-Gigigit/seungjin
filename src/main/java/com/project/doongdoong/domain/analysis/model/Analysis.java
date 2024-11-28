@@ -65,6 +65,10 @@ public class Analysis extends BaseEntity {
         return this.answers.size() == MAX_ANSWER_COUNT;
     }
 
+    public boolean isMissingAnswers() {
+        return !hasAllAnswer();
+    }
+
 
     public void changeFeelingStateAndAnalyzeTime(double feelingState, LocalDate analyzeTime){
         this.feelingState = feelingState;

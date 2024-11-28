@@ -1,5 +1,7 @@
 plugins {
 	java
+	jacoco
+
 	id("org.springframework.boot") version "3.2.1"
 	id("io.spring.dependency-management") version "1.1.4"
 	id("org.asciidoctor.jvm.convert") version "3.3.2"
@@ -109,6 +111,49 @@ tasks.test {
         //snippetsDir.deleteRecursively()
     }
     outputs.dir(snippetsDir) // 테스트 결과를 Snippets 디렉터리에 저장
+    finalizedBy("jacocoTestReport") // 테스트 후 JaCoCo 리포트 생성
+}
+
+jacoco {
+    toolVersion = "0.8.10" // 최신 버전 사용
+}
+
+tasks.jacocoTestReport {
+    dependsOn(tasks.test) // 테스트 실행 후 리포트 생성
+    reports {
+        xml.required.set(true) // SonarQube를 위한 XML 리포트 생성
+        html.required.set(true) // 사람이 읽기 쉬운 HTML 리포트 생성
+        csv.required.set(false) // CSV 리포트는 비활성화
+    }
+    finalizedBy("jacocoTestCoverageVerification") // 리포트 생성 후 검증
+}
+
+tasks.jacocoTestCoverageVerification {
+    violationRules {
+        rule {
+                enabled = true // 이 룰 활성화
+                element = "BUNDLE" // 전체 모듈 수준에서 통합 커버리지 검증
+
+                // 전체 커버리지 비율 설정
+                limit {
+                    counter = "LINE" // 라인 커버리지 기준
+                    value = "COVEREDRATIO"
+                    minimum = 0.30.toBigDecimal() // 30% 이상이어야 빌드 통과
+                }
+            }
+        rule { // 제외할 클래스 설정
+            enabled = true
+            element = "CLASS" // 개별 클래스 수준
+            excludes = listOf(
+                "**/generated/**", // RestDocs
+                "**/docs/**", // RestDocs
+                "**/dto/**", // DTO 클래스
+                "**/exception/**", // 커스텀 예외
+                "**/config/**", // 설정 파일
+                "**/common/**" // 공통 유틸
+            )
+        }
+    }
 }
 
 tasks.named<org.asciidoctor.gradle.jvm.AsciidoctorTask>("asciidoctor") {

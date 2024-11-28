@@ -145,7 +145,7 @@ public class AnalysisServiceImp implements AnalysisService {
         }
 
         Analysis findAnalysis = analysisRepository.searchFullAnalysisBy(analysisId).orElseThrow(AnalysisNotFoundException::new);
-        if (findAnalysis.hasAllAnswer()) { //만약 모든 질문에 대한 답변이 없는 경우, 답변이 부족하다는 예외 발생
+        if (findAnalysis.isMissingAnswers()) { //만약 모든 질문에 대한 답변이 없는 경우, 답변이 부족하다는 예외 발생
             throw new AllAnswersNotFoundException();
         }
 
@@ -266,7 +266,7 @@ public class AnalysisServiceImp implements AnalysisService {
     }
 
     private void updateContentWithTranscribedTextBy(List<Answer> answers, List<FellingStateCreateResponse> responseByText) {
-        if (answers.size() == responseByText.size()) {
+        if (answers.size() != responseByText.size()) {
             throw new ExternalApiCallException();
         }
         for (int i = 0; i < responseByText.size(); i++) {

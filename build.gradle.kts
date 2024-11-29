@@ -131,27 +131,22 @@ tasks.jacocoTestReport {
 tasks.jacocoTestCoverageVerification {
     violationRules {
         rule {
-                enabled = true // 이 룰 활성화
+                enabled = true
                 element = "BUNDLE" // 전체 모듈 수준에서 통합 커버리지 검증
 
-                // 전체 커버리지 비율 설정
                 limit {
                     counter = "LINE" // 라인 커버리지 기준
                     value = "COVEREDRATIO"
-                    minimum = 0.30.toBigDecimal() // 30% 이상이어야 빌드 통과
+                    minimum = 0.50.toBigDecimal()
                 }
-            }
-        rule { // 제외할 클래스 설정
-            enabled = true
-            element = "CLASS" // 개별 클래스 수준
-            excludes = listOf(
-                "**/generated/**", // RestDocs
-                "**/docs/**", // RestDocs
-                "**/dto/**", // DTO 클래스
-                "**/exception/**", // 커스텀 예외
-                "**/config/**", // 설정 파일
-                "**/common/**" // 공통 유틸
-            )
+                excludes = listOf(
+                                "**/generated/**", // Querydsl Qfile
+                                "**/docs/**", // RestDocs
+                                "**/dto/**", // DTO 클래스
+                                "**/exception/**", // 커스텀 예외
+                                "**/config/**", // 설정 파일
+                                "**/common/**" // 공통 유틸
+                            )
         }
     }
 }

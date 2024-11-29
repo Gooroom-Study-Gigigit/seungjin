@@ -8,16 +8,16 @@ import com.project.doongdoong.domain.image.exception.FileDeleteException;
 import com.project.doongdoong.domain.image.exception.FileEmptyException;
 import com.project.doongdoong.domain.image.exception.FileUploadException;
 import com.project.doongdoong.domain.question.model.QuestionContent;
-import com.project.doongdoong.domain.voice.exception.VoiceNotFoundException;
-import com.project.doongdoong.global.exception.servererror.ExternalApiCallException;
-import org.apache.commons.io.FilenameUtils;
 import com.project.doongdoong.domain.voice.dto.request.VoiceSaveRequestDto;
 import com.project.doongdoong.domain.voice.dto.response.VoiceDetailResponseDto;
 import com.project.doongdoong.domain.voice.dto.response.VoicesResponseDto;
+import com.project.doongdoong.domain.voice.exception.VoiceNotFoundException;
 import com.project.doongdoong.domain.voice.model.Voice;
 import com.project.doongdoong.domain.voice.repository.VoiceRepository;
+import com.project.doongdoong.global.exception.servererror.ExternalApiCallException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,10 +27,11 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.util.List;
 
-@Service @Slf4j
+@Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
-public class VoiceServiceImp implements VoiceService{
+public class VoiceServiceImp implements VoiceService {
 
     private static final String VOICE_KEY = "voice/";
 
@@ -38,12 +39,13 @@ public class VoiceServiceImp implements VoiceService{
     private String bucketName;
     private final AmazonS3Client amazonS3Client;
     private final VoiceRepository voiceRepository;
+
     @Override
     @Transactional
     public VoicesResponseDto saveVoices(VoiceSaveRequestDto saveDto) {
         VoicesResponseDto resultList = new VoicesResponseDto();
-        for(MultipartFile multipartFile : saveDto.getVoices()) {
-            if(multipartFile.isEmpty()){
+        for (MultipartFile multipartFile : saveDto.getVoices()) {
+            if (multipartFile.isEmpty()) {
                 new FileEmptyException();
             }
             VoiceDetailResponseDto detailResponseDto = saveVoice(multipartFile);
@@ -70,7 +72,7 @@ public class VoiceServiceImp implements VoiceService{
 
             String accessUrl = amazonS3Client.getUrl(bucketName, filename).toString();
             voice.changeAccessUrl(accessUrl);
-        } catch(SdkClientException | IOException e) {
+        } catch (SdkClientException | IOException e) {
             log.error("음성 파일 업로드 오류 -> {}", e.getMessage());
             new FileUploadException();
         }
@@ -89,7 +91,7 @@ public class VoiceServiceImp implements VoiceService{
             case "m4a":
                 return "audio/mp4";
             case "wav":
-                return  "audio/wav";
+                return "audio/wav";
             default:
                 throw new IllegalArgumentException("Unsupported file format");
         }
@@ -98,7 +100,7 @@ public class VoiceServiceImp implements VoiceService{
     @Override
     public void deleteVoice(String imageUrl) {
         Voice voice = voiceRepository.findByAccessUrl(imageUrl).orElseThrow(() -> new VoiceNotFoundException());
-        try{
+        try {
             voiceRepository.delete(voice);
             String filename = getObjectKeyFrom(voice);
             boolean isObjectExist = amazonS3Client.doesObjectExist(bucketName, filename);
@@ -107,8 +109,7 @@ public class VoiceServiceImp implements VoiceService{
             } else {
                 log.info("s3 파일이 존재하지 않습니다.");
             }
-        }
-        catch(SdkClientException e) {
+        } catch (SdkClientException e) {
             log.error("음성 파일 삭제 오류 -> {}", e.getMessage());
             new FileDeleteException();
         }
@@ -119,7 +120,7 @@ public class VoiceServiceImp implements VoiceService{
     public void deleteVoices(List<Voice> voices) {
 
         List<Long> voiceIds = getIdsFrom(voices);
-        if(voiceIds.isEmpty()){
+        if (voiceIds.isEmpty()) {
             return;
         }
 
@@ -171,7 +172,7 @@ public class VoiceServiceImp implements VoiceService{
             voice.changeAccessUrl(accessUrl);
             voiceRepository.save(voice);
 
-        } catch(SdkClientException e) {
+        } catch (SdkClientException e) {
             log.error("TTS 음성 파일 업로드 오류 -> {}", e.getMessage());
             throw new FileUploadException();
         }

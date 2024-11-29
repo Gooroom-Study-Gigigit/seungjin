@@ -1,6 +1,6 @@
 package com.project.doongdoong.domain.user.service;
 
-import com.project.doongdoong.domain.user.dto.UserInfomationResponse;
+import com.project.doongdoong.domain.user.dto.UserInformationResponseDto;
 import com.project.doongdoong.domain.user.exeception.RefreshTokenNoutFoundException;
 import com.project.doongdoong.domain.user.exeception.SocialTypeNotFoundException;
 import com.project.doongdoong.domain.user.exeception.TokenInfoFobiddenException;
@@ -9,7 +9,6 @@ import com.project.doongdoong.domain.user.model.SocialType;
 import com.project.doongdoong.domain.user.model.User;
 import com.project.doongdoong.domain.user.repository.UserRepository;
 import com.project.doongdoong.global.common.BlackAccessToken;
-import com.project.doongdoong.global.util.JwtProvider;
 import com.project.doongdoong.global.common.RefreshToken;
 import com.project.doongdoong.global.dto.request.LogoutDto;
 import com.project.doongdoong.global.dto.request.OAuthTokenDto;
@@ -17,6 +16,7 @@ import com.project.doongdoong.global.dto.request.ReissueDto;
 import com.project.doongdoong.global.dto.response.TokenDto;
 import com.project.doongdoong.global.repositoty.BlackAccessTokenRepository;
 import com.project.doongdoong.global.repositoty.RefreshTokenRepository;
+import com.project.doongdoong.global.util.JwtProvider;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -24,7 +24,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 
-@Service @Slf4j
+@Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class UserService {
@@ -41,7 +42,7 @@ public class UserService {
         String email = oAuthTokenInfo.getEmail();
         String nickname = oAuthTokenInfo.getNickname();
         SocialType socialType = SocialType.customValueOf(oAuthTokenInfo.getSocialType());
-        if(socialType == null){
+        if (socialType == null) {
             new SocialTypeNotFoundException();
         }
         log.info("socialType = {}", socialType);
@@ -53,8 +54,8 @@ public class UserService {
         userRepository.save(user); // 새롭게 생성된 경우에는 영속화 필요
 
         Optional<BlackAccessToken> blackAccessToken =
-                blackAccessTokenRepository.findById(BlackAccessToken.findUniqueId(socialId,socialType.getText()));
-        if(blackAccessToken.isPresent()) {
+                blackAccessTokenRepository.findById(BlackAccessToken.findUniqueId(socialId, socialType.getText()));
+        if (blackAccessToken.isPresent()) {
             blackAccessTokenRepository.delete(blackAccessToken.get());
             log.info("blackAccessToken 존재해서 삭제");
         }
@@ -63,16 +64,18 @@ public class UserService {
 
         RefreshToken refresh = RefreshToken.of(user.getSocialId(), user.getSocialType().getText(), tokenInfoResponse.getRefreshToken());
         Optional<RefreshToken> findRefreshToken = refreshTokenRepository.findByUniqueId(refresh.getUniqueId());
-        if(findRefreshToken.isPresent()){ // 기존 rft이 존재한다면 삭제하고 새롭게 저장
-            refreshTokenRepository.delete(findRefreshToken.get()); log.info("기존 RefreshToken 삭제");
+        if (findRefreshToken.isPresent()) { // 기존 rft이 존재한다면 삭제하고 새롭게 저장
+            refreshTokenRepository.delete(findRefreshToken.get());
+            log.info("기존 RefreshToken 삭제");
         }
-        refreshTokenRepository.save(refresh); log.info("새로운 RefreshToken 저장");
+        refreshTokenRepository.save(refresh);
+        log.info("새로운 RefreshToken 저장");
 
         return tokenInfoResponse;
     }
 
     private void checkChange(String email, String nickname, User user) {
-        if(email == null)
+        if (email == null)
             return;
 
         if (!user.getEmail().equals(email) || !user.getNickname().equals(nickname)) {
@@ -92,11 +95,11 @@ public class UserService {
     }
 
     @Transactional
-    public TokenDto reissue(ReissueDto reissueTokenDto){
+    public TokenDto reissue(ReissueDto reissueTokenDto) {
         String refreshToken = reissueTokenDto.getRefreshToken();
         Optional<RefreshToken> findRefreshToken = refreshTokenRepository.findByRefreshToken(refreshToken);
-        
-        if(findRefreshToken.isPresent()) { // rft이 존재한다면
+
+        if (findRefreshToken.isPresent()) { // rft이 존재한다면
             String token = findRefreshToken.get().getRefreshToken().substring(7);
             String socialId = jwtProvider.extractSocialId(token);
             String socialType = jwtProvider.extractSocialType(token);
@@ -106,7 +109,7 @@ public class UserService {
             return TokenDto.builder()
                     .accessToken(accessToken)
                     .build();
-        }else{
+        } else {
             throw new RefreshTokenNoutFoundException();
         }
 
@@ -117,16 +120,16 @@ public class UserService {
         String socialType = jwtProvider.extractSocialType(accessToken.substring(7));
         String socialId = jwtProvider.extractSocialId(accessToken.substring(7));
         Optional<RefreshToken> refreshToken = refreshTokenRepository.findByRefreshToken(tokenInfoDto.getRefreshToken());
-        if(refreshToken.isPresent()){       // blackAccessToken으로 이미 접근 권한을 막았지만 더 안전한 보안으로 rft도 삭제
+        if (refreshToken.isPresent()) {       // blackAccessToken으로 이미 접근 권한을 막았지만 더 안전한 보안으로 rft도 삭제
             refreshTokenRepository.delete(refreshToken.get()); // rft이 존재한다면 삭제
         }
 
         String accessSocialId = jwtProvider.extractSocialId(accessToken.substring(7));
         String accessSocailType = jwtProvider.extractSocialType(accessToken.substring(7));
-        if (!accessSocialId.equals(socialId)){
+        if (!accessSocialId.equals(socialId)) {
             new TokenInfoFobiddenException();
         }
-        if (!accessSocailType.equals(socialType)){
+        if (!accessSocailType.equals(socialType)) {
             new TokenInfoFobiddenException();
         }
 
@@ -134,12 +137,12 @@ public class UserService {
         blackAccessTokenRepository.save(blackAccessToken); // blackAccessToken 저장 -> 해당 act은 만료기간 남았더라도 접근 불가
     }
 
-    public UserInfomationResponse getMyPage(String uniqueValue) {
+    public UserInformationResponseDto getMyPage(String uniqueValue) {
         String[] value = parseUniqueValue(uniqueValue);
         User findUser = userRepository.findBySocialTypeAndSocialId(SocialType.customValueOf(value[1]), value[0])
                 .orElseThrow(() -> new UserNotFoundException());
 
-        return UserInfomationResponse.builder()
+        return UserInformationResponseDto.builder()
                 .nickname(findUser.getNickname())
                 .email(findUser.getEmail())
                 .socialType(findUser.getSocialType().getText())

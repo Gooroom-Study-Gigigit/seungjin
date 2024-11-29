@@ -16,12 +16,12 @@ public enum CounselType {
     RELATIONSHIP("대인관계"),
     FAMILY("가족");
 
-    private final String cotent;
+    private final String content;
 
     public static CounselType from(String value) {
 
         return Arrays.stream(CounselType.values())
-                .filter(i -> i.getCotent().equals(value))
+                .filter(i -> i.getContent().equals(value))
                 .findAny()
                 .orElseThrow(() -> new CounselTypeInvalidException(value));
     }

@@ -4,7 +4,6 @@ import com.project.doongdoong.domain.analysis.dto.response.*;
 import com.project.doongdoong.domain.analysis.service.AnalysisService;
 import com.project.doongdoong.domain.answer.dto.AnswerCreateResponseDto;
 import com.project.doongdoong.domain.answer.service.AnswerService;
-import com.project.doongdoong.domain.image.exception.FileEmptyException;
 import com.project.doongdoong.global.annotation.CurrentUser;
 import com.project.doongdoong.global.common.ApiResponse;
 import lombok.RequiredArgsConstructor;
@@ -61,7 +60,7 @@ public class AnalysisController {
                                                              @RequestParam("questionId") Long questionId) {
 
         if (file == null || file.isEmpty()) {
-            throw new FileEmptyException();
+            throw new IllegalArgumentException("파일이 존재하지 않습니다.");
         }
 
         return ApiResponse.of(HttpStatus.OK, null, answerService.createAnswer(analysisId, file, questionId));

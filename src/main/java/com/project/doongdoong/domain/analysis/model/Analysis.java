@@ -24,7 +24,8 @@ import static jakarta.persistence.GenerationType.IDENTITY;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Analysis extends BaseEntity {
 
-    @Id @GeneratedValue(strategy = IDENTITY)
+    @Id
+    @GeneratedValue(strategy = IDENTITY)
     @Column(name = "analysis_id")
     private Long id;
 
@@ -36,10 +37,10 @@ public class Analysis extends BaseEntity {
     @JoinColumn(name = "user_id")
     private User user;
 
-    @OneToMany(cascade = ALL ,orphanRemoval = true, mappedBy = "analysis")
+    @OneToMany(cascade = ALL, orphanRemoval = true, mappedBy = "analysis")
     private List<Question> questions = new ArrayList<>();
 
-    @OneToMany(cascade = ALL ,orphanRemoval = true, mappedBy = "analysis")
+    @OneToMany(cascade = ALL, orphanRemoval = true, mappedBy = "analysis")
     private List<Answer> answers = new ArrayList<>();
 
     @OneToOne(fetch = LAZY, mappedBy = "analysis")
@@ -47,7 +48,7 @@ public class Analysis extends BaseEntity {
 
     private static final int MAX_ANSWER_COUNT = 4;
 
-    public static Analysis of(User user, List<Question> questions){
+    public static Analysis of(User user, List<Question> questions) {
         return Analysis.builder()
                 .user(user)
                 .questions(questions)
@@ -55,7 +56,7 @@ public class Analysis extends BaseEntity {
     }
 
     @Builder
-    public Analysis(User user, List<Question> questions){
+    public Analysis(User user, List<Question> questions) {
         this.feelingState = 0;
         this.questions = questions;
         this.user = user;
@@ -70,19 +71,19 @@ public class Analysis extends BaseEntity {
     }
 
 
-    public void changeFeelingStateAndAnalyzeTime(double feelingState, LocalDate analyzeTime){
+    public void changeFeelingStateAndAnalyzeTime(double feelingState, LocalDate analyzeTime) {
         this.feelingState = feelingState;
         this.analyzeTime = analyzeTime;
     }
 
-    public boolean equalsAnalyzeTimeTo(LocalDate time){
-        if(this.analyzeTime == null || time == null){
+    public boolean equalsAnalyzeTimeTo(LocalDate time) {
+        if (this.analyzeTime == null || time == null) {
             return false;
         }
         return time.equals(this.analyzeTime);
     }
 
     public boolean isAlreadyAnalyzed() {
-        return this.analyzeTime != null ;
+        return this.analyzeTime != null;
     }
 }

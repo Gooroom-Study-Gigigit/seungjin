@@ -10,7 +10,8 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 
-@Entity @Getter
+@Entity
+@Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Counsel extends BaseEntity {
 
@@ -47,15 +48,15 @@ public class Counsel extends BaseEntity {
 
     }
 
-    public void addAnalysis(Analysis analysis){
+    public void addAnalysis(Analysis analysis) {
         this.analysis = analysis;
     }
 
-    public void saveAnswer(String answer){
+    public void saveAnswer(String answer) {
         this.answer = answer;
     }
 
-    public boolean hasAnaylsis(){
+    public boolean hasAnaylsis() {
         return this.getAnalysis() != null;
     }
 

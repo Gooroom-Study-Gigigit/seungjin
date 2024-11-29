@@ -1,9 +1,9 @@
 package com.project.doongdoong.domain.analysis.dto.response;
 
 import lombok.*;
-import org.checkerframework.checker.units.qual.A;
 
-@Getter @Setter
+@Getter
+@Setter
 @Builder
 @NoArgsConstructor
 @AllArgsConstructor

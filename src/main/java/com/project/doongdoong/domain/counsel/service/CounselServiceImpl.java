@@ -11,8 +11,8 @@ import com.project.doongdoong.domain.counsel.dto.response.CounselListResponse;
 import com.project.doongdoong.domain.counsel.dto.response.CounselResponse;
 import com.project.doongdoong.domain.counsel.dto.response.CounselResultResponse;
 import com.project.doongdoong.domain.counsel.exception.CounselAlreadyProcessedException;
-import com.project.doongdoong.domain.counsel.exception.CounselNotFoundException;
 import com.project.doongdoong.domain.counsel.exception.CounselNotExistPageException;
+import com.project.doongdoong.domain.counsel.exception.CounselNotFoundException;
 import com.project.doongdoong.domain.counsel.exception.UnAuthorizedForCounselException;
 import com.project.doongdoong.domain.counsel.model.Counsel;
 import com.project.doongdoong.domain.counsel.model.CounselType;
@@ -35,7 +35,8 @@ import java.util.HashMap;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-@Service @Slf4j
+@Service
+@Slf4j
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class CounselServiceImpl implements CounselService {
@@ -64,7 +65,7 @@ public class CounselServiceImpl implements CounselService {
          * 2. analysisId 여부
          * 3. 각 분석 답변 4개 -> 하나의 스트링 -> AI한테 (imformation)
          */
-        if(request.getAnalysisId() != null){ // 기존 분석 결과 반영하기
+        if (request.getAnalysisId() != null) { // 기존 분석 결과 반영하기
             Analysis findAnalysis = analysisRepository.findByUserAndId(user, request.getAnalysisId()).orElseThrow(() -> new AnalysisAccessDeny());
             checkCounselAlreadyProcessed(findAnalysis); // 해당 분석의 정보로 상담한 경우 예외
             counsel.addAnalysis(findAnalysis); // 연관관계 매핑
@@ -78,7 +79,7 @@ public class CounselServiceImpl implements CounselService {
         counsel.saveImageUrl(counselAiResponse.getImageUrl());
         Counsel savedCounsel = counselRepository.save(counsel);
 
-        return  CounselResultResponse.builder()
+        return CounselResultResponse.builder()
                 .counselId(savedCounsel.getId())
                 .counselContent(counselAiResponse.getAnswer())
                 .imageUrl(counselAiResponse.getImageUrl())
@@ -87,30 +88,30 @@ public class CounselServiceImpl implements CounselService {
     }
 
     private HashMap<String, Object> setupParameters(Counsel counsel) {
-        HashMap<String, Object> parameters = new HashMap<String, Object>( ); // 외부 API request 설정
+        HashMap<String, Object> parameters = new HashMap<String, Object>(); // 외부 API request 설정
         parameters.put("question", counsel.getQuestion()); // 고민은 필수
-        parameters.put("category", counsel.getCounselType().getCotent());
+        parameters.put("category", counsel.getCounselType().getContent());
 
 
         Optional.ofNullable(counsel.getAnalysis()) // 분석 -> 상담 으로 연결되는 경우, 분석에 대한 답변 항목 추가
                 .ifPresent(analysis -> {
-                    if(analysis.getAnswers().size() != 4) {
+                    if (analysis.getAnswers().size() != 4) {
                         throw new AllAnswersNotFoundException();
                     }
                     String content = "";
-                    for(Answer answer :analysis.getAnswers())    {
+                    for (Answer answer : analysis.getAnswers()) {
                         content += answer.getContent() + " ";
                     }
                     parameters.put("analysisContent", content);
                 });
-        if(parameters.get("analysisContent") == null){ // 없는 경우, 빈 문자열값
+        if (parameters.get("analysisContent") == null) { // 없는 경우, 빈 문자열값
             parameters.put("analysisContent", "");
         }
         return parameters;
     }
 
     private void checkCounselAlreadyProcessed(Analysis findAnalysis) {
-        if(findAnalysis.getCounsel() != null){
+        if (findAnalysis.getCounsel() != null) {
             throw new CounselAlreadyProcessedException();
         }
     }
@@ -123,7 +124,7 @@ public class CounselServiceImpl implements CounselService {
                 .orElseThrow(() -> new UserNotFoundException());
         Counsel findCounsel = counselRepository.findWithAnalysisById(counselId).orElseThrow(() -> new CounselNotFoundException());
 
-        if(!findCounsel.getUser().getId().equals(findUser.getId())){ // 사용자 본인의 상담만 확인 가능
+        if (!findCounsel.getUser().getId().equals(findUser.getId())) { // 사용자 본인의 상담만 확인 가능
             throw new UnAuthorizedForCounselException();
         }
 
@@ -133,7 +134,7 @@ public class CounselServiceImpl implements CounselService {
                 .question(findCounsel.getQuestion())
                 .answer(findCounsel.getAnswer())
                 .imageUrl(findCounsel.getImageUrl())
-                .counselType(findCounsel.getCounselType().getCotent())
+                .counselType(findCounsel.getCounselType().getContent())
                 .build();
     }
 
@@ -147,7 +148,7 @@ public class CounselServiceImpl implements CounselService {
         PageRequest pageRequest = PageRequest.of(pageNumber, COUNSEL_PAGE_SIZE);
         Page<Counsel> counselsPage = counselRepository.searchPageCounselList(findUser, pageRequest);
 
-        if(pageNumber + 1 > counselsPage.getTotalPages()){ // 존재하지 않는 페이지에 접근하는 경우
+        if (pageNumber + 1 > counselsPage.getTotalPages()) { // 존재하지 않는 페이지에 접근하는 경우
             throw new CounselNotExistPageException();
         }
 
@@ -162,7 +163,7 @@ public class CounselServiceImpl implements CounselService {
                                         .date(counsel.getCreatedTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm")))
                                         .counselId(counsel.getId())
                                         .isAnalysisUsed(counsel.hasAnaylsis())
-                                        .counselType(counsel.getCounselType().getCotent())
+                                        .counselType(counsel.getCounselType().getContent())
                                         .build()
                         )
                         .collect(Collectors.toList())

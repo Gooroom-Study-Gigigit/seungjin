@@ -21,6 +21,7 @@ public class CounselCreateRequest {
         this.counselType = counselType;
         this.question = question;
     }
+
     @Builder
     public CounselCreateRequest(String counselType, String question) {
         this.counselType = counselType;

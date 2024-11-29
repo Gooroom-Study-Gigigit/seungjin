@@ -3,13 +3,17 @@ package com.project.doongdoong.domain.user.model;
 import com.project.doongdoong.domain.analysis.model.Analysis;
 import com.project.doongdoong.global.common.BaseEntity;
 import jakarta.persistence.*;
-import lombok.*;
+import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
-@Entity @Getter
+@Entity
+@Getter
 @Table(name = "users")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
@@ -45,26 +49,28 @@ public class User extends BaseEntity {
         this.socialType = socialType;
     }
 
-    public void changeEmail(String email){
+    public void changeEmail(String email) {
         this.email = email;
     }
-    public void changeNickname(String nickname){
+
+    public void changeNickname(String nickname) {
         this.nickname = nickname;
     }
-    public void checkRoles(){
-        if(this.roles.isEmpty()){
+
+    public void checkRoles() {
+        if (this.roles.isEmpty()) {
             this.roles = Collections.singletonList(Role.ROLE_USER.toString());
         }
 
     }
 
-    public void growUp(){
+    public void growUp() {
         this.emotionGrowth++;
         checkGrowth();
     }
 
-    private void checkGrowth(){
-        if(getEmotionGrowth() == 101L)
+    private void checkGrowth() {
+        if (getEmotionGrowth() == 101L)
             this.emotionGrowth %= 101;
     }
 

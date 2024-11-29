@@ -1,10 +1,8 @@
 package com.project.doongdoong.domain.analysis.dto.response;
 
-import com.project.doongdoong.domain.analysis.model.Analysis;
 import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-import lombok.RequiredArgsConstructor;
 
 import java.util.List;
 

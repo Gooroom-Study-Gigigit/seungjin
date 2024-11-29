@@ -4,7 +4,8 @@ import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
-@Getter @Builder
+@Getter
+@Builder
 @NoArgsConstructor
 public class FeelingStateResponseDto {
 

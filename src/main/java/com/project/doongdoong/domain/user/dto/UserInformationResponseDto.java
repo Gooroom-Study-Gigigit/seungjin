@@ -4,7 +4,7 @@ import lombok.Builder;
 import lombok.Getter;
 
 @Getter
-public class UserInfomationResponse {
+public class UserInformationResponseDto {
     private String nickname;
 
     private String email;
@@ -15,7 +15,7 @@ public class UserInfomationResponse {
 
 
     @Builder
-    public UserInfomationResponse(String nickname, String email, String socialType, Long analysisCount) {
+    public UserInformationResponseDto(String nickname, String email, String socialType, Long analysisCount) {
         this.nickname = nickname;
         this.email = email;
         this.socialType = socialType;

@@ -251,7 +251,7 @@ public class AnalysisControllerTest extends ControllerTestSupport {
                 ).andDo(print())
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.errorCode").value(1))
-                .andExpect(jsonPath("$.message").value("파일 자료가 하나도 없습니다."));
+                .andExpect(jsonPath("$.message").value("해당 파일은 비어 있습니다."));
 
     }
 

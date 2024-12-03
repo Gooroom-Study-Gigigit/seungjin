@@ -4,12 +4,17 @@ import com.project.doongdoong.domain.analysis.dto.response.*;
 import com.project.doongdoong.domain.analysis.service.AnalysisService;
 import com.project.doongdoong.domain.answer.dto.AnswerCreateResponseDto;
 import com.project.doongdoong.domain.answer.service.AnswerService;
+import com.project.doongdoong.domain.voice.exception.FileUploadException;
 import com.project.doongdoong.global.annotation.CurrentUser;
 import com.project.doongdoong.global.common.ApiResponse;
+import com.project.doongdoong.global.exception.CustomException;
+import com.project.doongdoong.global.exception.ErrorType;
+import com.project.doongdoong.global.exception.FileEmptyException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
+
 
 
 @RestController
@@ -60,7 +65,7 @@ public class AnalysisController {
                                                              @RequestParam("questionId") Long questionId) {
 
         if (file == null || file.isEmpty()) {
-            throw new IllegalArgumentException("파일이 존재하지 않습니다.");
+            throw new FileEmptyException(ErrorType.BadRequest.FILE_EMPTY, "해당 파일은 비어 있습니다.");
         }
 
         return ApiResponse.of(HttpStatus.OK, null, answerService.createAnswer(analysisId, file, questionId));

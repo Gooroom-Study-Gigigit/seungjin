@@ -4,16 +4,15 @@ import com.amazonaws.SdkClientException;
 import com.amazonaws.services.s3.AmazonS3Client;
 import com.amazonaws.services.s3.model.DeleteObjectsRequest;
 import com.amazonaws.services.s3.model.ObjectMetadata;
-import com.project.doongdoong.domain.image.exception.FileDeleteException;
-import com.project.doongdoong.domain.image.exception.FileEmptyException;
-import com.project.doongdoong.domain.image.exception.FileUploadException;
 import com.project.doongdoong.domain.question.model.QuestionContent;
 import com.project.doongdoong.domain.voice.dto.request.VoiceSaveRequestDto;
 import com.project.doongdoong.domain.voice.dto.response.VoiceDetailResponseDto;
 import com.project.doongdoong.domain.voice.dto.response.VoicesResponseDto;
+import com.project.doongdoong.domain.voice.exception.FileUploadException;
 import com.project.doongdoong.domain.voice.exception.VoiceNotFoundException;
 import com.project.doongdoong.domain.voice.model.Voice;
 import com.project.doongdoong.domain.voice.repository.VoiceRepository;
+import com.project.doongdoong.global.exception.ErrorType;
 import com.project.doongdoong.global.exception.servererror.ExternalApiCallException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -46,7 +45,7 @@ public class VoiceServiceImp implements VoiceService {
         VoicesResponseDto resultList = new VoicesResponseDto();
         for (MultipartFile multipartFile : saveDto.getVoices()) {
             if (multipartFile.isEmpty()) {
-                new FileEmptyException();
+                throw new FileUploadException(ErrorType.ServerError.FILE_UPLOAD_FAIL, "해당 파일은 비어 있습니다.");
             }
             VoiceDetailResponseDto detailResponseDto = saveVoice(multipartFile);
             resultList.getVoicesResponse().add(detailResponseDto);
@@ -74,7 +73,7 @@ public class VoiceServiceImp implements VoiceService {
             voice.changeAccessUrl(accessUrl);
         } catch (SdkClientException | IOException e) {
             log.error("음성 파일 업로드 오류 -> {}", e.getMessage());
-            new FileUploadException();
+            throw new FileUploadException(ErrorType.ServerError.FILE_UPLOAD_FAIL, e.getMessage());
         }
         log.info("음성 파일 저장 종료");
 
@@ -111,7 +110,7 @@ public class VoiceServiceImp implements VoiceService {
             }
         } catch (SdkClientException e) {
             log.error("음성 파일 삭제 오류 -> {}", e.getMessage());
-            new FileDeleteException();
+            throw new FileUploadException(ErrorType.ServerError.FILE_UPLOAD_FAIL, e.getMessage());
         }
     }
 
@@ -174,7 +173,7 @@ public class VoiceServiceImp implements VoiceService {
 
         } catch (SdkClientException e) {
             log.error("TTS 음성 파일 업로드 오류 -> {}", e.getMessage());
-            throw new FileUploadException();
+            throw new FileUploadException(ErrorType.ServerError.FILE_UPLOAD_FAIL, e.getMessage());
         }
 
         return VoiceDetailResponseDto.of(voice.getAccessUrl());

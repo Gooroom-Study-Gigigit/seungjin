@@ -118,6 +118,15 @@ jacoco {
     toolVersion = "0.8.10" // 최신 버전 사용
 }
 
+// 제외할 디렉토리 및 파일 패턴을 공통 변수로 선언
+val jacocoExcludes = listOf(
+    "**/generated/**", // Querydsl Qfile
+    "**/docs/**", // RestDocs
+    "**/dto/**", // DTO 클래스
+    "**/exception/**", // 커스텀 예외
+    "**/config/**", // 설정 파일
+    "**/common/**" // 공통 유틸
+)
 tasks.jacocoTestReport {
     dependsOn(tasks.test) // 테스트 실행 후 리포트 생성
     reports {
@@ -125,6 +134,14 @@ tasks.jacocoTestReport {
         html.required.set(true) // 사람이 읽기 쉬운 HTML 리포트 생성
         csv.required.set(false) // CSV 리포트는 비활성화
     }
+    classDirectories.setFrom( // 리포트 생성에서 제외할 디렉토리와 파일 설정
+                    files(classDirectories.files.map {
+                        fileTree(it) {
+                            exclude(jacocoExcludes)
+                        }
+                    })
+                )
+
     finalizedBy("jacocoTestCoverageVerification") // 리포트 생성 후 검증
 }
 
@@ -139,14 +156,7 @@ tasks.jacocoTestCoverageVerification {
                     value = "COVEREDRATIO"
                     minimum = 0.50.toBigDecimal()
                 }
-                excludes = listOf(
-                                "**/generated/**", // Querydsl Qfile
-                                "**/docs/**", // RestDocs
-                                "**/dto/**", // DTO 클래스
-                                "**/exception/**", // 커스텀 예외
-                                "**/config/**", // 설정 파일
-                                "**/common/**" // 공통 유틸
-                            )
+                excludes = jacocoExcludes
         }
     }
 }

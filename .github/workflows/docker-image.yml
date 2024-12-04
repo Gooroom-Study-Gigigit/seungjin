@@ -1,0 +1,71 @@
+name: CI 자동화
+
+on:
+  push:
+    branches: [ "dev" ]
+  pull_request:
+    branches: [ "dev", "main" ]
+
+jobs:
+
+  build:
+    runs-on: ubuntu-latest
+    
+    env:
+        DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+        DOCKERHUB_PASSWORD: ${{ secrets.DOCKER_PASSWORD }}
+        IMAGE_NAME: ${{ secrets.IMAGE_NAME }}
+        TAG: latest
+
+    steps:
+    - name: 리포지토리 소스 코드 가져오기
+      uses: actions/checkout@v4
+
+    - name: JDK 17을 설치합니다
+      uses: actions/setup-java@v3
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+
+    - name: Gradle 명령 실행을 위한 권한을 부여합니다
+      run: chmod +x gradlew
+
+    - name: Gradle build를 수행합니다
+      run: ./gradlew build
+
+    - name: 테스트 결과를 PR에 코멘트로 등록합니다
+      uses: EnricoMi/publish-unit-test-result-action@v1
+      if: always()
+      with:
+        files: '**/build/test-results/test/TEST-*.xml'
+
+    - name: 테스트 실패 시, 실패한 코드 라인에 Check 코멘트를 등록합니다
+      uses: mikepenz/action-junit-report@v3
+      if: always()
+      with:
+        report_paths: '**/build/test-results/test/TEST-*.xml'
+        token: ${{ github.token }}
+
+    - name: 테스트 커버리지를 PR에 코멘트로 등록합니다
+      id: jacoco
+      uses: madrapps/jacoco-report@v1.2
+      with:
+        titl: 📈 테스트 커버리지 리포트입니다
+        paths: ${{ github.workspace }}/build/reports/jacoco/test/jacocoTestReport.xml
+        token: ${{ secrets.GITHUB_TOKEN }}
+        min-coverage-overall: 50
+        min-coverage-changed-files: 50
+        
+    # 5. Docker 이미지 빌드
+    - name: Docker 이미지 빌드
+      run: docker buildx build --platform linux/amd64 -t $DOCKERHUB_USERNAME/$IMAGE_NAME:$TAG .
+
+    # 6. Docker Hub 로그인
+    - name: Docker Hub 로그인
+      run: echo "$DOCKERHUB_PASSWORD" | docker login -u $DOCKERHUB_USERNAME --password-stdin
+
+    # 7. Docker 이미지 푸시
+    - name: Docker 이미지 푸시
+      run: docker push $DOCKERHUB_USERNAME/$IMAGE_NAME:$TAG
+  
+    

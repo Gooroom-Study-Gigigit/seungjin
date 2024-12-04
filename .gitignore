@@ -9,6 +9,8 @@ build/
 **/*.yml
 #quersydsl 설정
 **/src/main/generated/**
+# 성능 테스트 관련 파일 제외
+target/
 
 ### STS ###
 .apt_generated
